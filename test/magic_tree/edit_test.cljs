@@ -21,6 +21,7 @@
     :hop-left "( ab|c)" "( |abc)"
     :hop-left "((|))" "(|())"
 
+    :comment-line "abc|\ndef" ";;abc\ndef|"
     :comment-line "abc|" ";;abc|"
 
     ))

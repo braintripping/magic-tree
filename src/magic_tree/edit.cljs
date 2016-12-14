@@ -9,10 +9,10 @@
 
 (aset js/window "onload"
       #(defonce paste-element (let [textarea (doto (dom/createElement "input")
-                                              (dom/setProperties #js {:id        "magic-tree.pasteHelper"
-                                                                      :className "fixed o-0 z-0 bottom-0 right-0"}))]
-                               (dom/appendChild js/document.body textarea)
-                               textarea)))
+                                               (dom/setProperties #js {:id        "magic-tree.pasteHelper"
+                                                                       :className "fixed o-0 z-0 bottom-0 right-0"}))]
+                                (dom/appendChild js/document.body textarea)
+                                textarea)))
 
 (def pass (.-Pass js/CodeMirror))
 
@@ -165,19 +165,19 @@
 
                :comment-line
                (fn [{zipper :zipper :as cm}]
-                 (let [line-n (.-line (.getCursor cm))
+                 (let [{line-n :line column-n :column} (get-in cm [:magic/sursor :pos])
                        [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
                        [space-n semicolon-n] (map count [spaces semicolons])]
                    (if (> semicolon-n 0)
-                     (.replaceRange cm ""
-                                    #js {:line line-n :ch space-n}
-                                    #js {:line line-n :ch (+ space-n semicolon-n)})
+                     (replace-range cm "" {:line line-n :column space-n :end-column (+ space-n semicolon-n)})
                      (let [{:keys [end-line end-column]} (some-> (tree/node-at zipper {:line line-n :column 0})
                                                                  z/up
                                                                  z/node)]
                        (when (= line-n end-line)
                          (replace-range cm (str "\n" spaces) {:line line-n :column (dec end-column)}))
-                       (replace-range cm ";;" {:line line-n :column space-n})))))
+                       (replace-range cm ";;" {:line line-n :column space-n})))
+                   (.setCursor cm #js {:line (inc line-n)
+                                       :ch   column-n})))
 
                :uneval-at-point
                (fn [{{:keys [pos]} :magic/cursor
