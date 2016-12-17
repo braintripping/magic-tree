@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/magic-tree "0.0.1-SNAPSHOT"
+(defproject org.clojars.mhuebert/magic-tree "0.0.1"
   :description "Clojure(Script) Source Tool"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -14,6 +14,8 @@
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-doo "0.1.6"]]
+
+  :lein-release {:deploy-via :clojars}
 
   :doo {:build "test"}
 
