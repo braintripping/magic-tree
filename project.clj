@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/magic-tree "0.0.1"
+(defproject org.clojars.mhuebert/magic-tree "0.0.2-SNAPSHOT"
   :description "Clojure(Script) Source Tool"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
