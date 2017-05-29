@@ -1,4 +1,5 @@
 .idea
 *.iml
 *.xml
+pom.xml.asc
 target

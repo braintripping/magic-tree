@@ -6,7 +6,7 @@
 
             [magic-tree.core :as tree]
             [magic-tree.codemirror.util :as cm]
-            [magic-tree.edit :refer [key-map]]))
+            [magic-tree.codemirror.edit :refer [key-map]]))
 
 (specify! (.-prototype js/CodeMirror)
   ILookup
@@ -43,12 +43,15 @@
          zipper                     :zipper} cm]
 
     (match [(.-type e) (.-which e) (.-metaKey e)]
-           ["mousemove" _ true] (highlight-node! cm (->> (cm/mouse-pos cm e)
-                                                         (tree/node-at zipper)
-                                                         tree/mouse-eval-region
-                                                         z/node))
+           ["mousemove" _ true] (some->> (cm/mouse-pos cm e)
+                                         (tree/node-at zipper)
+                                         tree/mouse-eval-region
+                                         z/node
+                                         (highlight-node! cm))
            ["keyup" 91 false] (clear-highlight! cm)
-           ["keydown" _ true] (highlight-node! cm (z/node bracket-loc))
+           ["keydown" _ true] (some->> bracket-loc
+                                       z/node
+                                       (highlight-node! cm))
            :else nil)))
 
 (defn clear-brackets! [cm]

@@ -29,7 +29,7 @@
    :uneval           ["#_"]
    :var              ["#'"]
    :vector           [\[ \]]
-   ;:comment          [";"]
+   ;:comment          [";"] ;; to avoid highlighting, we don't consider the leading ; an 'edge'
 
    })
 
@@ -67,8 +67,8 @@
                :vector) (wrap-children lbracket rbracket value)
              (:meta :reader-meta) (str (:prefix options) (wrap-children lbracket rbracket value))
              (:string
-               :regex
-               :comment) (str lbracket value rbracket)
+               :regex) (str lbracket value rbracket)
+             :comment (str ";" value)                       ;; to avoid highlighting, we don't consider the leading ; an 'edge'
              :keyword value
              :namespaced-keyword (keyword *ns* (name value))
              nil ""))

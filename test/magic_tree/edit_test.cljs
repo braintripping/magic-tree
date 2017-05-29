@@ -1,6 +1,6 @@
 (ns magic-tree.edit-test
   (:require [magic-tree.codemirror.addons]
-            [magic-tree.edit :refer [munge-command-key]]
+            [magic-tree.codemirror.edit :refer [munge-command-key]]
             [magic-tree.test-utils :refer [test-exec]]
             [cljs.test :refer-macros [deftest is are]]))
 

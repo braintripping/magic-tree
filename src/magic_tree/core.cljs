@@ -1,112 +1,78 @@
 (ns magic-tree.core
+  (:refer-clojure :exclude [range])
   (:require [magic-tree.parse :as parse]
             [magic-tree.emit :as unwrap]
             [magic-tree.node :as n]
+            [magic-tree.nav :as nav]
+            [magic-tree.range :as range]
+
             [fast-zip.core :as z]
             [cljs.test :refer [is are]]))
 
-(def ast parse/ast)
-(defn ast-zip [ast]
+
+;; Parse
+
+(def ast
+  "Given ClojureScript source, returns AST"
+  parse/ast)
+
+(defn ast-zip
+  "Given AST, returns zipper"
+  [ast]
   (z/zipper
     n/may-contain-children?
     :value
     (fn [node children] (assoc node :value children))
     ast))
-(def string-zip (comp ast-zip parse/ast))
-(def string unwrap/string)
-(def sexp unwrap/sexp)
+
+(def string-zip
+  "Given ClojureScript source, returns zipper"
+  (comp ast-zip parse/ast))
+
+
+;; Nodes
 
 (def comment? n/comment?)
+
 (def whitespace? n/whitespace?)
 (def newline? n/newline?)
 (def sexp? n/sexp?)
 (def may-contain-children? n/may-contain-children?)
 (def terminal-node? n/terminal-node?)
-(def edge-ranges n/edge-ranges)
-(def inner-range n/inner-range)
 (def has-edges? n/has-edges?)
-(def within? n/within?)
-(def inside? n/inside?)
+
+
+;; Emit
+
+(def string unwrap/string)
+(def sexp unwrap/sexp)
 (def edges unwrap/edges)
-(def log (atom []))
 
-(defn child-locs [loc]
-  (take-while identity (iterate z/right (z/down loc))))
-(defn right-locs [loc]
-  (take-while identity (iterate z/right (z/right loc))))
-(defn left-locs [loc]
-  (take-while identity (iterate z/left (z/left loc))))
-(defn top-loc [loc]
-  (first (filter #(or (= :base (get (z/node %) :tag))
-                      (= :base (get (z/node (z/up %)) :tag))) (iterate z/up loc))))
+;; Navigation
 
-(defn node-at [ast pos]
+(def child-locs nav/child-locs)
+(def right-locs nav/right-locs)
+(def left-locs nav/left-locs)
+(def top-loc nav/top-loc)
 
-  (condp = (type ast)
-    z/ZipperLocation
-    (let [loc ast
-          node (z/node loc)
-          found (when (n/within? node pos)
-                  (if
-                    (or (terminal-node? node) (not (seq (get node :value))))
-                    loc
-                    (or
-                      (some-> (filter #(n/within? % pos) (child-locs loc))
-                              first
-                              (node-at pos))
-                      ;; do we want to avoid 'base'?
-                      loc #_(when-not (= :base (get node :tag))
-                              loc))))]
-      (if (let [found-node (some-> found z/node)]
-            (and (= (get pos :line) (get found-node :end-line))
-                 (= (get pos :column) (get found-node :end-column))))
-        (or (z/right found) found)
-        found))
+(def node-at nav/node-at)
+(def mouse-eval-region nav/mouse-eval-region)
+(def nearest-bracket-region nav/nearest-bracket-region)
 
-    PersistentArrayMap
-    (when (n/within? ast pos)
-      (if
-        (or (terminal-node? ast) (not (seq (get ast :value))))
-        ast
-        (or (some-> (filter #(n/within? % pos) (get ast :value))
-                    first
-                    (node-at pos))
-            (when-not (= :base (get ast :tag))
-              ast))))))
 
-(defn mouse-eval-region
-  "Select sexp under the mouse. Whitespace defers to parent."
-  [loc]
-  (or (and (sexp? (z/node loc)) loc)
-      (z/up loc)))
+;; Ranges
 
-(defn nearest-bracket-region
-  "Highlight brackets for specified sexp, or nearest sexp to the left, or parent."
-  [loc]
-  (or (->> (cons loc (left-locs loc))
-           (filter (comp #(or (sexp? %)
-                              (= :uneval (get % :tag))) z/node))
-           first)
-      (z/up loc)))
+(def within? range/within?)
+(def inside? range/inside?)
+(def edge-ranges range/edge-ranges)
+(def inner-range range/inner-range)
+(def boundaries range/boundaries)
+(def node-highlights range/node-highlights)
 
-(defn boundaries
-  "Returns position map for left or right boundary of the node."
-  ([node] (select-keys node [:line :column :end-line :end-column]))
-  ([node side]
-   (case side :left (select-keys node [:line :column])
-              :right {:line   (:end-line node)
-                      :column (:end-column node)})))
-
-(defn node-highlights
-  "Get range(s) to highlight for a node. For a collection, only highlight brackets."
-  [node]
-  (if (may-contain-children? node)
-    (if (second (get unwrap/edges (get node :tag)))
-      (edge-ranges node)
-      (update (edge-ranges (first (:value node))) 0 merge (boundaries node :left)))
-    [node]))
 
 (comment
+
+  (def log (atom []))
 
   (assert (n/within? {:line           1 :column 1
                             :end-line 1 :end-column 2}

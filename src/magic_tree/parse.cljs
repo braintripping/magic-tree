@@ -191,7 +191,9 @@
   (r/indexing-push-back-reader
     (r/string-push-back-reader s)))
 
-(defn ast [s]
+(defn ast
+  "Parse ClojureScript source code to AST"
+  [s]
   (-> (rd/read-with-position (indexing-reader (str "[\n" s "\n]")) parse-next*)
       (assoc :tag :base)
       (update :value rest)

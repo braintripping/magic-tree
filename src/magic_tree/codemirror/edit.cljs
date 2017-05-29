@@ -1,4 +1,4 @@
-(ns magic-tree.edit
+(ns magic-tree.codemirror.edit
   (:require [cljsjs.codemirror]
             [cljsjs.codemirror.addon.search.searchcursor]
             [magic-tree.core :as tree]
@@ -249,5 +249,4 @@
 
               "Cmd-L"         :select-pipes
 
-              "Shift-Cmd-K"   :slurp
-              }))
+              "Shift-Cmd-K"   :slurp}))
