@@ -1,4 +1,4 @@
-(ns magic-tree.codemirror.util)
+(ns magic-tree-codemirror.util)
 
 (defn selection-text
   "Return selected text, or nil"

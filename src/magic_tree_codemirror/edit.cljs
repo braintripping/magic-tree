@@ -1,8 +1,8 @@
-(ns magic-tree.codemirror.edit
+(ns magic-tree-codemirror.edit
   (:require [cljsjs.codemirror]
             [cljsjs.codemirror.addon.search.searchcursor]
             [magic-tree.core :as tree]
-            [magic-tree.codemirror.util :as cm-util]
+            [magic-tree-codemirror.util :as cm-util]
             [fast-zip.core :as z]
             [goog.dom :as dom]))
 

@@ -1,6 +1,6 @@
 (ns magic-tree.test-utils
-  (:require [magic-tree.codemirror.addons]
-            [magic-tree.codemirror.edit :refer [munge-command-key]]
+  (:require [magic-tree-codemirror.addons]
+            [magic-tree-codemirror.edit :refer [munge-command-key]]
             [clojure.string :as string]))
 
 

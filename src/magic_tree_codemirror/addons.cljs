@@ -1,12 +1,12 @@
-(ns magic-tree.codemirror.addons
+(ns magic-tree-codemirror.addons
   (:require [cljsjs.codemirror]
             [cljs.core.match :refer-macros [match]]
             [fast-zip.core :as z]
             [goog.events :as events]
 
             [magic-tree.core :as tree]
-            [magic-tree.codemirror.util :as cm]
-            [magic-tree.codemirror.edit :refer [key-map]]))
+            [magic-tree-codemirror.util :as cm]
+            [magic-tree-codemirror.edit :refer [key-map]]))
 
 (specify! (.-prototype js/CodeMirror)
   ILookup
