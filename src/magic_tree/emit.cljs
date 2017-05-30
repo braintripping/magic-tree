@@ -8,8 +8,6 @@
 
 (def ^:dynamic *ns* (symbol "magic-tree.user"))
 
-(declare string)
-
 (def edges
   {:deref            ["@"]
    :list             [\( \)]
@@ -35,44 +33,48 @@
 
 (def printable-only? #{:comment :uneval :space :newline :comma})
 
+(declare string)
+
 (defn wrap-children [left right children]
-  (str left (apply str (map string children)) right))
+  (str left (apply str (mapv string children)) right))
 
 #_(defn children? [{:keys [tag]}]
     (#{:list :fn :map :meta :set :vector :uneval} tag))
 
 (defn string
-  ([node] (string (symbol "cljs.user") node))
+  "Emit ClojureScript string from a magic-tree AST"
   ([ns node]
-   (binding [*ns* ns]
-     (when-not (nil? node)
-       (if (map? node)
-         (let [{:keys [tag value options]} node
-               [lbracket rbracket] (get edges tag [])]
-           (case tag
-             :base (apply str (map string value))
-             (:token :space :newline :comma) value
-             (:deref
-               :fn
-               :list
-               :map
-               :quote
-               :reader-macro
-               :set
-               :syntax-quote
-               :uneval
-               :unquote
-               :unquote-splicing
-               :var
-               :vector) (wrap-children lbracket rbracket value)
-             (:meta :reader-meta) (str (:prefix options) (wrap-children lbracket rbracket value))
-             (:string
-               :regex) (str lbracket value rbracket)
-             :comment (str ";" value)                       ;; to avoid highlighting, we don't consider the leading ; an 'edge'
-             :keyword value
-             :namespaced-keyword (keyword *ns* (name value))
-             nil ""))
-         (string (z/node node)))))))
+   (binding [*ns* (or ns (symbol "cljs.user"))]
+     (string node)))
+  ([node]
+   (when-not (nil? node)
+     (if (map? node)
+       (let [{:keys [tag value options]} node
+             [lbracket rbracket] (get edges tag [])]
+         (case tag
+           :base (apply str (mapv string value))
+           (:token :space :newline :comma) value
+           (:deref
+             :fn
+             :list
+             :map
+             :quote
+             :reader-macro
+             :set
+             :syntax-quote
+             :uneval
+             :unquote
+             :unquote-splicing
+             :var
+             :vector) (wrap-children lbracket rbracket value)
+           (:meta :reader-meta) (str (:prefix options) (wrap-children lbracket rbracket value))
+           (:string
+             :regex) (str lbracket value rbracket)
+           :comment (str ";" value)                         ;; to avoid highlighting, we don't consider the leading ; an 'edge'
+           :keyword value
+           :namespaced-keyword (keyword *ns* (name value))
+           nil ""))
+       (string (z/node node))))))
 
 (declare sexp)
 

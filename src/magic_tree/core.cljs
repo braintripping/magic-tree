@@ -29,6 +29,11 @@
   "Given ClojureScript source, returns zipper"
   (comp ast-zip parse/ast))
 
+;; Emit
+
+(def string unwrap/string)
+(def sexp unwrap/sexp)
+(def edges unwrap/edges)
 
 ;; Nodes
 
@@ -41,12 +46,6 @@
 (def terminal-node? n/terminal-node?)
 (def has-edges? n/has-edges?)
 
-
-;; Emit
-
-(def string unwrap/string)
-(def sexp unwrap/sexp)
-(def edges unwrap/edges)
 
 ;; Navigation
 
