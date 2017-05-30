@@ -1,4 +1,4 @@
-(defproject magic-tree "0.0.4"
+(defproject magic-tree "0.0.5-SNAPSHOT"
   :description "Clojure(Script) Source Tool"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
