@@ -71,8 +71,8 @@
            (:string
              :regex) (str lbracket value rbracket)
            :comment (str ";" value)                         ;; to avoid highlighting, we don't consider the leading ; an 'edge'
-           :keyword value
-           :namespaced-keyword (keyword *ns* (name value))
+           :keyword (str value)
+           :namespaced-keyword (str (keyword *ns* (name value)))
            nil ""))
        (string (z/node node))))))
 
