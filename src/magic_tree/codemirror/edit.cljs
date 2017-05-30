@@ -103,12 +103,33 @@
   (= (tree/boundaries p1)
      (tree/boundaries p2)))
 
+(defn move-char [cm pos amount]
+  (.findPosH cm pos amount "char" false))
+
+(defn char-at [cm pos]
+  (.getRange cm pos (move-char cm pos 1)))
+
 (def commands {:kill
                (fn [{{pos :pos loc :loc} :magic/cursor :as cm}]
                  (if (.somethingSelected cm)
                    pass
                    (->> (get-kill-range pos loc)
                         (cut-range cm))))
+
+               #_:delete
+               ;; early, awkward attempt at handling brackets
+               #_(fn [cm]
+                 (if (.somethingSelected cm)
+                   pass
+                   (doseq [selection (reverse (.listSelections cm))]
+                     (let [pos (move-char cm (.-head selection) -1)
+                           char (char-at cm pos)]
+                       (do (when-not (#{\) \] \}} char)
+                             (.replaceRange cm "" (.-head selection) pos))
+                           #js {"anchor" (.-head selection)
+                                "head"   (.-head selection)})
+
+                       ))))
 
                :copy-at-point
                (fn [cm] (if (.somethingSelected cm)

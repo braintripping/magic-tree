@@ -11,18 +11,18 @@
 (specify! (.-prototype js/CodeMirror)
   ILookup
   (-lookup
-    ([this k] (get (.-$cljs$state this) k))
-    ([this k not-found] (get (.-$cljs$state this) k not-found)))
+    ([this k] (get (aget this "cljs$state") k))
+    ([this k not-found] (get (aget this "cljs$state") k not-found)))
   ISwap
   (-swap!
-    ([this f] (set! (.-$cljs$state this) (f (.-$cljs$state this))))
-    ([this f a] (set! (.-$cljs$state this) (f (.-$cljs$state this) a)))
-    ([this f a b] (set! (.-$cljs$state this) (f (.-$cljs$state this) a b)))
+    ([this f] (aset this "cljs$state" (f (aget this "cljs$state"))))
+    ([this f a] (aset this "cljs$state" (f (aget this "cljs$state") a)))
+    ([this f a b] (aset this "cljs$state" (f (aget this "cljs$state") a b)))
     ([this f a b xs]
-     (set! (.-$cljs$state this) (apply f (concat (list (.-$cljs$state this) a b) xs))))))
+     (aset this "cljs$state" (apply f (concat (list (aget this "cljs$state") a b) xs))))))
 
 (.defineOption js/CodeMirror "cljsState" false
-               (fn [cm] (set! (.-$cljs$state cm) (or (.-$cljs$state cm) {}))))
+               (fn [cm] (aset cm "cljs$state" (or (aget cm "cljs$state") {}))))
 
 (defn clear-highlight! [cm]
   (doseq [handle (get-in cm [:magic/highlight :handles])]
@@ -43,13 +43,14 @@
          zipper                     :zipper} cm]
 
     (match [(.-type e) (.-which e) (.-metaKey e)]
-           ["mousemove" _ true] (some->> (cm/mouse-pos cm e)
+           #_["mousemove" _ true] #_(some->> (cm/mouse-pos cm e)
                                          (tree/node-at zipper)
                                          tree/mouse-eval-region
                                          z/node
                                          (highlight-node! cm))
            ["keyup" 91 false] (clear-highlight! cm)
-           ["keydown" _ true] (some->> bracket-loc
+           ["keydown" _ true] (some->> (cond-> bracket-loc
+                                               (not (.-shiftKey e)) (some-> (tree/top-loc)))
                                        z/node
                                        (highlight-node! cm))
            :else nil)))
@@ -114,10 +115,11 @@
                    (cm/define-extension "magicClearHighlight" clear-highlight!)
                    (cm/define-extension "magicUpdateHighlight" update-highlights!)
 
+
                    (.on cm "keyup" update-highlights!)
                    (.on cm "keydown" update-highlights!)
-                   (when-let [dom-node (.. cm -display -wrapper)]
-                     (events/listen dom-node "mousemove" (partial update-highlights! cm)))
+                   (when-let [^js/HTMLElement el (aget cm "display" "wrapper")]
+                     (events/listen el "mousemove" (partial update-highlights! cm)))
 
                    (swap! cm assoc :magic/brackets? true))))
 
