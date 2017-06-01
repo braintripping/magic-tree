@@ -38,22 +38,19 @@
            {:node    node
             :handles (cm/mark-ranges! cm (tree/node-highlights node) #js {:className "CodeMirror-eval-highlight"})})))
 
-(defn update-highlights! [cm e]
-  (let [{{bracket-loc :bracket-loc} :magic/cursor
-         zipper                     :zipper} cm]
+(defn reset-highlight! [cm meta-key shift-key bracket-loc]
+  (clear-highlight! cm)
+  (when-let [loc (case [meta-key shift-key]
+                   [true false] bracket-loc
+                   [true true] (some-> bracket-loc (tree/top-loc))
+                   nil)]
+    (some->> (z/node loc) (highlight-node! cm))))
 
-    (match [(.-type e) (.-which e) (.-metaKey e)]
-           #_["mousemove" _ true] #_(some->> (cm/mouse-pos cm e)
-                                         (tree/node-at zipper)
-                                         tree/mouse-eval-region
-                                         z/node
-                                         (highlight-node! cm))
-           ["keyup" 91 false] (clear-highlight! cm)
-           ["keydown" _ true] (some->> (cond-> bracket-loc
-                                               (not (.-shiftKey e)) (some-> (tree/top-loc)))
-                                       z/node
-                                       (highlight-node! cm))
-           :else nil)))
+(defn update-highlights! [cm e]
+  (let [{{bracket-loc :bracket-loc} :magic/cursor} cm]
+    (when (and (#{"keyup" "keydown"} (.-type e))
+               (#{16 91} (.-which e)))
+      (reset-highlight! cm (.-metaKey e) (.-shiftKey e) bracket-loc))))
 
 (defn clear-brackets! [cm]
   (doseq [handle (get-in cm [:magic/cursor :handles])]
