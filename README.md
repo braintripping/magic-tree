@@ -4,13 +4,13 @@
 >
 > -- _David Mitchell, Cloud Atlas_
 
-Magic Tree is a library for reading and transforming ClojureScript code, a building block for smart, structural editing environments. Like [rewrite-cljs](https://github.com/rundis/rewrite-cljs), it preserves whitespace and uses zippers as an intermediate data structure. The current form of Magic Tree is just a first step to a bigger vision.
+Magic Tree parses Clojure code into an AST suitable for powering smart, structural editing environments. Like [rewrite-cljs](https://github.com/rundis/rewrite-cljs), it preserves whitespace and uses zippers as an intermediate data structure. The current form of Magic Tree is just a first step to a bigger vision.
 
 ## What can it do?
 
-1. Parse raw ClojureScript source into an AST (`magic-tree.core/ast`) and corresponding zipper (`magic-tree.core/ast-zip`).
+1. Parse raw Clojure source into an AST (`magic-tree.core/ast`) and corresponding zipper (`magic-tree.core/ast-zip`).
 2. Traverse and edit as desired.
-3. Emit ClojureScript (`magic-tree.core/string` or `magic-tree.core/sexp`).
+3. Emit Clojure (`magic-tree.core/string` or `magic-tree.core/sexp`) with existing whitespace intact.
 
 ## Usage with CodeMirror
 
