@@ -16,7 +16,7 @@ The current form of Magic Tree is just a first step to a bigger vision.
 
 ## Usage with CodeMirror
 
-The `magic-tree-codemirror` namespaces include work on bracket highlighting and paredit functionality. Implementing editor behaviour is hard to do in a general way and so this code is tightly coupled to CodeMirror. 
+The `magic-tree-codemirror` namespaces include work on bracket highlighting and paredit functionality. Implementing editor behaviour is hard to do in a general way and so this code is tightly coupled to CodeMirror. This code should be considered temporary 'scratch' code that **will not** be maintained indefinitely.
 
 An example of real-world usage can be found in [Maria](https://github.com/mhuebert/maria), a beginner-friendly ClojureScript REPL.
 
@@ -26,4 +26,4 @@ An example of real-world usage can be found in [Maria](https://github.com/mhuebe
 
 ## Future
 
-In addition to being 'whitespace-aware', a magic-tree AST should also be 'cursor-aware' and 'selection-aware', and thus encapsulate nearly the full state of an editor. This will simplify the implementation of new editing commands, make testing easier, and allow more freedoms in the visual representation of code.
+In addition to being 'whitespace-aware', a magic-tree AST should also be 'cursor-aware' and 'selection-aware', and thus encapsulate nearly the full state of an editor. This will simplify the implementation of new editing commands, make testing easier, and allow for more freedoms in the visual representation and manipulation of code. (CodeMirror will be just one of many possible 'views' on an AST, one which happens to emphasize string representations.)
