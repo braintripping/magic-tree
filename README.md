@@ -6,7 +6,7 @@
 
 Magic Tree is a library for reading and transforming ClojureScript code. Like [rewrite-cljs](https://github.com/rundis/rewrite-cljs), it preserves whitespace and uses zippers as an intermediate data structure. It is small and moldable, built for the purpose of building editors and editing tools. 
 
-The current form of magic-tree is just a first step to a bigger vision.
+The current form of Magic Tree is just a first step to a bigger vision.
 
 ## What can it do?
 
