@@ -26,4 +26,4 @@ An example of real-world usage can be found in [Maria](https://github.com/mhuebe
 
 ## Future
 
-In addition to being 'whitespace-aware', a magic-tree AST should also be 'cursor-aware' and 'selection-aware', and thus encapsulate nearly the full state of an editor. This will simplify the implementation of new editing commands, make testing easier, and allow for more freedoms in the visual representation and manipulation of code. (CodeMirror will be just one of many possible 'views' on an AST, one which happens to emphasize string representations.)
+In addition to being 'whitespace-aware', a magic-tree AST should also be 'cursor-aware' and 'selection-aware', and thus encapsulate nearly the full state of an editor. This will simplify the implementation of new editing commands, make testing easier, and allow for more freedoms in the visual representation and manipulation of code. (CodeMirror will be just one of many possible 'views' on an AST, one which happens to use a string representation.)
