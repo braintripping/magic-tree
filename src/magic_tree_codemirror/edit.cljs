@@ -119,17 +119,17 @@
                #_:delete
                ;; early, awkward attempt at handling brackets
                #_(fn [cm]
-                 (if (.somethingSelected cm)
-                   pass
-                   (doseq [selection (reverse (.listSelections cm))]
-                     (let [pos (move-char cm (.-head selection) -1)
-                           char (char-at cm pos)]
-                       (do (when-not (#{\) \] \}} char)
-                             (.replaceRange cm "" (.-head selection) pos))
-                           #js {"anchor" (.-head selection)
-                                "head"   (.-head selection)})
+                   (if (.somethingSelected cm)
+                     pass
+                     (doseq [selection (reverse (.listSelections cm))]
+                       (let [pos (move-char cm (.-head selection) -1)
+                             char (char-at cm pos)]
+                         (do (when-not (#{\) \] \}} char)
+                               (.replaceRange cm "" (.-head selection) pos))
+                             #js {"anchor" (.-head selection)
+                                  "head"   (.-head selection)})
 
-                       ))))
+                         ))))
 
                :copy-at-point
                (fn [cm] (if (.somethingSelected cm)
@@ -271,3 +271,8 @@
               "Cmd-L"         :select-pipes
 
               "Shift-Cmd-K"   :slurp}))
+
+'{[:shift :cmd "k"] {:exec :slurp}
+  [:ctrl "x"]       {:keys {[:ctrl "x"] {:exec :slurp}}}}
+'{#{:shift :cmd "k"} {:exec :slurp}
+  #{:ctrl "x"}       {:keys {[:ctrl "x"] {:exec :slurp}}}}

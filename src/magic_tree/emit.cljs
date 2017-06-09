@@ -7,6 +7,7 @@
   (:require-macros [magic-tree.backtick :refer [template]]))
 
 (def ^:dynamic *ns* (symbol "magic-tree.user"))
+(def ^:dynamic *features* #{:cljs})
 
 (def edges
   {:deref            ["@"]
@@ -31,7 +32,9 @@
 
    })
 
-(def printable-only? #{:comment :uneval :space :newline :comma})
+(def tag-for-print-only? #{:comment :uneval :space :newline :comma})
+
+
 
 (declare string)
 
@@ -49,7 +52,7 @@
   ([node]
    (when-not (nil? node)
      (if (map? node)
-       (let [{:keys [tag value options]} node
+       (let [{:keys [tag value prefix]} node
              [lbracket rbracket] (get edges tag [])]
          (case tag
            :base (apply str (mapv string value))
@@ -60,31 +63,37 @@
              :map
              :quote
              :reader-macro
+             :reader-conditional
              :set
              :syntax-quote
              :uneval
              :unquote
              :unquote-splicing
              :var
-             :vector) (wrap-children lbracket rbracket value)
-           (:meta :reader-meta) (str (:prefix options) (wrap-children lbracket rbracket value))
+             :vector) (wrap-children (str lbracket prefix) rbracket value)
+           (:meta :reader-meta) (str prefix (wrap-children lbracket rbracket value))
            (:string
              :regex) (str lbracket value rbracket)
            :comment (str ";" value)                         ;; to avoid highlighting, we don't consider the leading ; an 'edge'
            :keyword (str value)
-           :namespaced-keyword (str (keyword *ns* (name value)))
+           :namespaced-keyword (str "::" (name value))
            nil ""))
        (string (z/node node))))))
 
 (declare sexp)
 
 (defn as-code [forms]
-  (map sexp (filter #(not (printable-only? (:tag %))) forms)))
+  (reduce (fn [out {:keys [tag splice?] :as item}]
+            (if (tag-for-print-only? tag)
+              out
+              (let [value (sexp item)]
+                ((if splice? into conj)
+                  out value)))) [] forms))
 
-(defn sexp [{:keys [tag value options] :as node}]
+(defn sexp [{:keys [tag value prefix] :as node}]
   (when node
     (case tag
-      :base (first (as-code value))
+      :base (as-code value)
 
       (:space
         :newline
@@ -104,6 +113,14 @@
       :unquote (template (~'clojure.core/unquote ~(first (as-code value))))
       :unquote-splicing (template (~'clojure.core/unquote-splicing ~(first (as-code value))))
       :reader-macro (r/read-string (string node))
+      :reader-conditional (let [[feature form] (->> (remove #(tag-for-print-only? (:tag %)) (:value (first value)))
+                                                    (partition 2)
+                                                    (filter (fn [[{feature :value} _]] (contains? *features* feature)))
+                                                    (first))]
+                            (if feature
+                              (cond-> (sexp form)
+                                      (= prefix "#?") (vector))
+                              []))
       (:meta
         :reader-meta) (let [[m data] (as-code value)]
                         (with-meta data (if (map? m) m {m true})))

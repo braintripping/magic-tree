@@ -4,7 +4,7 @@
             [magic-tree.test-utils :refer [test-exec]]
             [cljs.test :refer-macros [deftest is are]]))
 
-(deftest edit-commands
+#_(deftest edit-commands
   (are [cmd source post-source]
     (= (test-exec cmd source) post-source)
 

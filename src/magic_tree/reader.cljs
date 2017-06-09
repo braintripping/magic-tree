@@ -73,24 +73,25 @@
 (defn position
   "Create map of `row-k` and `col-k` representing the current reader position."
   [^not-native reader]
-  #js [(- (r/get-line-number reader) 2)
-       (dec (r/get-column-number reader))])
+  #js [(dec (r/get-line-number reader))
+       (r/get-column-number reader)])
 
 (defn read-with-position
   "Use the given function to read value, then attach row/col metadata."
   [^not-native reader read-fn]
-  ;; dec row, because we wrap forms with [\n ...]
-  ;; dec end-col, because that char belongs to the next form
+  ;; X dec row, because we wrap forms with [\n ...]
+  ;; X dec end-col, because that char belongs to the next form
   (let [start-pos (position reader)
-        form (read-fn reader)
+        [tag value opts :as form] (read-fn reader)
         end-pos (position reader)]
     (when-not (nil? form)
-      {:tag        (nth form 0)
-       :value      (nth form 1)
-       :line       (aget start-pos 0)
-       :column     (aget start-pos 1)
-       :end-line   (aget end-pos 0)
-       :end-column (aget end-pos 1)})))
+      (merge {:tag        tag
+              :value      value
+              :line       (aget start-pos 0)
+              :column     (aget start-pos 1)
+              :end-line   (aget end-pos 0)
+              :end-column (aget end-pos 1)}
+             opts))))
 
 (defn read-n
   "Call the given function on the given reader until `n` values matching `p?` have been
