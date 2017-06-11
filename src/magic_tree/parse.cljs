@@ -11,6 +11,12 @@
 
 (enable-console-print!)
 
+(def ^:dynamic *errors* nil)
+(defn error! [info]
+  (when (some? *errors*)
+    (set! *errors* (conj *errors* info)))
+  info)
+
 (def ^:dynamic ^:private *delimiter* nil)
 (declare parse-next)
 
@@ -48,7 +54,7 @@
 
 (defn- dispatch
   [c]
-  (cond (identical? c *delimiter*) :delimiter
+  (cond (identical? c *delimiter*) :matched-delimiter
         (nil? c) :eof
         :else (case c
                 \, :comma
@@ -59,7 +65,7 @@
                 \( :list
                 \[ :vector
                 \{ :map
-                (\} \] \)) :unmatched
+                (\} \] \)) :unmatched-delimiter
                 \~ :unquote
                 \' :quote
                 \` :syntax-quote
@@ -72,9 +78,8 @@
 (defn- parse-delim
   [reader delimiter]
   (rd/ignore reader)
-  (->> #(binding [*delimiter* delimiter]
-          (parse-next %))
-       (rd/read-repeatedly reader)))
+  (rd/read-repeatedly reader #(binding [*delimiter* delimiter]
+                                (parse-next %))))
 
 (defn ^:boolean printable-only? [n]
   (contains? #{:space :comma :newline :comment}
@@ -131,7 +136,7 @@
          (rd/next reader)
          (let [read-next #(parse-printables reader :reader-macro 1)
                opts (case (rd/peek reader)
-                      \( {:prefix "#?"
+                      \( {:prefix  "#?"
                           :splice? true}
                       \@ (do (rd/next reader)
                              {:prefix  "#?@"
@@ -173,10 +178,10 @@
       (:list
         :vector
         :map) [tag (parse-delim reader (get brackets c))]
-      :delimiter (rd/ignore reader)
-      :unmatched (rd/throw-reader reader "Unmatched delimiter: %s" c)
-      :eof (when-not (nil? *delimiter*)
-             (rd/throw-reader reader "Unexpected EOF (end of file)"))
+
+      :matched-delimiter (do (rd/ignore reader) nil)
+      (:eof :unmatched-delimiter) (error! [:error/missing-delimiter {:position  (rd/position reader)
+                                                                     :delimiter *delimiter*}])
       :meta (do (rd/ignore reader)
                 [tag (parse-printables reader :meta 2)])
       :string [tag (rd/read-string-data reader)])))
@@ -194,12 +199,15 @@
 (defn ast
   "Parse ClojureScript source code to AST"
   [s]
-  (loop [reader (indexing-reader s)
-         values []]
-    (if-some [next-thing (rd/read-with-position reader parse-next*)]
-      (recur reader (conj values next-thing))
-      (merge {:value (vec values)
-              :tag   :base}
-             (select-keys (last values)
-                          [:line :column :end-line :end-column])))))
-
+  (binding [*errors* []]
+    (loop [reader (indexing-reader s)
+           values []]
+      (if-some [next-thing (rd/read-with-position reader parse-next*)]
+        (recur reader (conj values next-thing))
+        {:value      values
+         :tag        :base
+         :errors     *errors*
+         :line       0
+         :column     0
+         :end-line   (r/get-line-number reader)
+         :end-column (r/get-column-number reader)}))))

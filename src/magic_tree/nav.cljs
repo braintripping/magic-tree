@@ -15,37 +15,35 @@
                       (= :base (get (z/node (z/up %)) :tag))) (iterate z/up loc))))
 
 (defn node-at [ast pos]
-  (condp = (type ast)
-    z/ZipperLocation
-    (let [loc ast
-          node (z/node loc)
-          found (when (range/within? node pos)
-                  (if
-                    (or (n/terminal-node? node) (not (seq (get node :value))))
-                    loc
-                    (or
-                      (some-> (filter #(range/within? % pos) (child-locs loc))
-                              first
-                              (node-at pos))
-                      ;; do we want to avoid 'base'?
-                      loc #_(when-not (= :base (get node :tag))
-                              loc))))]
-      (if (let [found-node (some-> found z/node)]
-            (and (= (get pos :line) (get found-node :end-line))
-                 (= (get pos :column) (get found-node :end-column))))
-        (or (z/right found) found)
-        found))
-
-    PersistentArrayMap
-    (when (range/within? ast pos)
-      (if
-        (or (n/terminal-node? ast) (not (seq (get ast :value))))
-        ast
-        (or (some-> (filter #(range/within? % pos) (get ast :value))
-                    first
-                    (node-at pos))
-            (when-not (= :base (get ast :tag))
-              ast))))))
+  (cond (= (type ast) z/ZipperLocation)
+        (let [loc ast
+              {:keys [value] :as node} (z/node loc)
+              found (when (range/within? node pos)
+                      (if
+                        (or (n/terminal-node? node) (not (seq value)))
+                        loc
+                        (or
+                          (some-> (filter #(range/within? % pos) (child-locs loc))
+                                  first
+                                  (node-at pos))
+                          ;; do we want to avoid 'base'?
+                          loc #_(when-not (= :base (get node :tag))
+                                  loc))))]
+          (if (let [found-node (some-> found z/node)]
+                (and (= (get pos :line) (get found-node :end-line))
+                     (= (get pos :column) (get found-node :end-column))))
+            (or (z/right found) found)
+            found))
+        (map? ast) (when (range/within? ast pos)
+                     (if
+                       (or (n/terminal-node? ast) (not (seq (get ast :value))))
+                       ast
+                       (or (some-> (filter #(range/within? % pos) (get ast :value))
+                                   first
+                                   (node-at pos))
+                           (when-not (= :base (get ast :tag))
+                             ast))))
+        :else (throw (js/Error "Invalid argument passed to `node-at`"))))
 
 (defn mouse-eval-region
   "Select sexp under the mouse. Whitespace defers to parent."

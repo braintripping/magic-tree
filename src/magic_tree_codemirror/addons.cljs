@@ -3,7 +3,7 @@
             [cljs.core.match :refer-macros [match]]
             [fast-zip.core :as z]
             [goog.events :as events]
-
+            [cljs.pprint :refer [pprint]]
             [magic-tree.core :as tree]
             [magic-tree-codemirror.util :as cm]
             [magic-tree-codemirror.edit :refer [key-map]]))
@@ -125,4 +125,3 @@
                  (when kmap
                    (.addKeyMap cm (clj->js (cond-> key-map
                                                    (map? kmap) (merge kmap)))))))
-

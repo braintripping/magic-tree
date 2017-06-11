@@ -52,8 +52,7 @@
 (defn ignore
   "Ignore the next character."
   [^not-native reader]
-  (r/read-char reader)
-  nil)
+  (r/read-char reader))
 
 (defn unread
   "Unreads a char. Puts the char back on the reader."
@@ -66,31 +65,35 @@
   [^not-native reader read-fn]
   (loop [reader reader
          out []]
-    (if-let [next-node (read-fn reader)]
-      (recur reader (conj out next-node))
-      out)))
+    (let [next-node (read-fn reader)]
+      (cond (nil? next-node)
+            out
+            (= "error" (namespace (get next-node :tag)))
+            (conj out next-node)
+            :else
+            (recur reader (conj out next-node))))))
 
 (defn position
   "Create map of `row-k` and `col-k` representing the current reader position."
   [^not-native reader]
-  #js [(dec (r/get-line-number reader))
-       (r/get-column-number reader)])
+  #js [(dec (r/get-line-number reader) )
+       (dec (r/get-column-number reader))])
 
 (defn read-with-position
   "Use the given function to read value, then attach row/col metadata."
   [^not-native reader read-fn]
   ;; X dec row, because we wrap forms with [\n ...]
   ;; X dec end-col, because that char belongs to the next form
-  (let [start-pos (position reader)
-        [tag value opts :as form] (read-fn reader)
-        end-pos (position reader)]
+  (let [start-line (dec (r/get-line-number reader))
+        start-column (dec (r/get-column-number reader))
+        [tag value opts :as form] (read-fn reader)]
     (when-not (nil? form)
       (merge {:tag        tag
               :value      value
-              :line       (aget start-pos 0)
-              :column     (aget start-pos 1)
-              :end-line   (aget end-pos 0)
-              :end-column (aget end-pos 1)}
+              :line       start-line
+              :column     start-column
+              :end-line   (dec (r/get-line-number reader))
+              :end-column (dec (r/get-column-number reader))}
              opts))))
 
 (defn read-n
@@ -126,4 +129,3 @@
               (.append buf c)
               (recur (and (not escape?) (identical? c \\)))))
       (throw-reader reader "Unexpected EOF while reading string."))))
-
