@@ -66,12 +66,15 @@
 
 (defn update-ast!
   [{:keys [ast] :as cm}]
-  (when-let [next-ast (try (tree/ast (.getValue cm))
-                           (catch js/Error e (.debug js/console e)))]
+  (when-let [{:keys [errors] :as next-ast} (try (tree/ast (.getValue cm))
+                                                (catch js/Error e (.debug js/console e)))]
     (when (not= next-ast ast)
-      (swap! cm assoc
-             :ast next-ast
-             :zipper (tree/ast-zip next-ast)))))
+      (when (seq errors) (prn :ast-errors! errors))
+      (if (seq errors)
+        (swap! cm dissoc :ast :zipper)
+        (swap! cm assoc
+               :ast next-ast
+               :zipper (tree/ast-zip next-ast))))))
 
 (defn update-cursor!
   [{:keys [zipper magic/brackets?] :as cm}]

@@ -3,7 +3,6 @@
 
 (ns magic-tree.parse
   (:require [magic-tree.reader :as rd]
-            [magic-tree.emit :as unwrap]
             [cljs.pprint :refer [pprint]]
             [cljs.tools.reader.reader-types :as r]
             [cljs.tools.reader.edn :as edn]
@@ -180,8 +179,9 @@
         :map) [tag (parse-delim reader (get brackets c))]
 
       :matched-delimiter (do (rd/ignore reader) nil)
-      (:eof :unmatched-delimiter) (error! [:error/missing-delimiter {:position  (rd/position reader)
-                                                                     :delimiter *delimiter*}])
+      (:eof :unmatched-delimiter) (do (rd/ignore reader)
+                                      (error! [:error/missing-delimiter {:position  (rd/position reader)
+                                                                         :delimiter *delimiter*}]))
       :meta (do (rd/ignore reader)
                 [tag (parse-printables reader :meta 2)])
       :string [tag (rd/read-string-data reader)])))
@@ -199,6 +199,7 @@
 (defn ast
   "Parse ClojureScript source code to AST"
   [s]
+
   (binding [*errors* []]
     (loop [reader (indexing-reader s)
            values []]
