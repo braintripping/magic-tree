@@ -1,27 +1,31 @@
 (ns magic-tree-codemirror.edit
   (:require [cljsjs.codemirror]
             [cljsjs.codemirror.addon.search.searchcursor]
+            [goog.dom.Range :as Range]
             [magic-tree.core :as tree]
             [magic-tree-codemirror.util :as cm-util]
             [fast-zip.core :as z]
-            [goog.dom :as dom]))
+            [goog.dom :as dom]
+            [clojure.string :as string]))
 
-
+(def paste-element nil)
 (aset js/window "onload"
-      #(defonce paste-element (let [textarea (doto (dom/createElement "input")
-                                               (dom/setProperties #js {:id        "magic-tree.pasteHelper"
-                                                                       :className "fixed o-0 z-0 bottom-0 right-0"}))]
-                                (dom/appendChild js/document.body textarea)
-                                textarea)))
+      #(set! paste-element (let [textarea (doto (dom/createElement "div")
+                                            (dom/setProperties #js {:id              "magic-tree.pasteHelper"
+                                                                    :contentEditable true
+                                                                    :className       "fixed pre o-0 z-0 bottom-0 right-0"}))]
+                             (dom/appendChild js/document.body textarea)
+                             textarea)))
 
 (def pass (.-Pass js/CodeMirror))
 
 (defn copy
   "Copy text to clipboard using a hidden input element."
   [text]
-  (let [hadFocus (.-activeElement js/document)]
-    (doto paste-element
-      (.setAttribute "value" text)
+  (let [hadFocus (.-activeElement js/document)
+        text (string/replace text #"[\n\r]" "<br/>")
+        _ (aset paste-element "innerHTML" text)]
+    (doto (Range/createFromNodeContents paste-element)
       (.select))
     (try (.execCommand js/document "copy")
          (catch js/Error e (.error js/console "Copy command didn't work. Maybe a browser incompatibility?")))
@@ -109,6 +113,23 @@
 (defn char-at [cm pos]
   (.getRange cm pos (move-char cm pos 1)))
 
+(defn uneval [cm bracket-loc]
+  (let [add-uneval (fn [pos] (replace-range cm "#_" (select-keys pos [:line :column])))
+        remove-uneval (fn [pos] (replace-range cm "" (assoc (select-keys pos [:line :column]) :end-column (+ 2 (:column pos)))))
+        bracket-node (z/node bracket-loc)]
+    (if (.somethingSelected cm)
+      (let [{:keys [line end-line] :as sel-pos} (selection-boundaries cm)]
+        (if (= "#_" (subs (.getSelection cm) 0 2))
+          (remove-uneval sel-pos)
+          (do (add-uneval sel-pos)
+              (select-range cm (cond-> sel-pos
+                                       (= line end-line) (update :end-column #(+ % 2)))))))
+
+      (if-let [uneval-node (first (filter #(= :uneval (get % :tag))
+                                          (list bracket-node (some-> bracket-loc z/up z/node))))]
+        (remove-uneval uneval-node)
+        (add-uneval bracket-node)))))
+
 (def commands {:kill
                (fn [{{pos :pos loc :loc} :magic/cursor :as cm}]
                  (if (.somethingSelected cm)
@@ -131,17 +152,17 @@
 
                          ))))
 
-               :copy-at-point
+               :copy-form
                (fn [cm] (if (.somethingSelected cm)
                           pass
                           (copy-range cm (get-in cm [:magic/cursor :bracket-node]))))
 
-               :cut-at-point
+               :cut-form
                (fn [cm] (if (.somethingSelected cm)
                           pass
                           (cut-range cm (get-in cm [:magic/cursor :bracket-node]))))
 
-               :delete-at-point
+               :delete-form
                (fn [cm] (if (.somethingSelected cm)
                           pass
                           (replace-range cm "" (get-in cm [:magic/cursor :bracket-node]))))
@@ -200,26 +221,19 @@
                    (.setCursor cm #js {:line (inc line-n)
                                        :ch   column-n})))
 
-               :uneval-at-point
+               :uneval-form
                (fn [{{:keys [pos]} :magic/cursor
                      zipper        :zipper
                      :as           cm}]
-                 (let [bracket-loc (tree/nearest-bracket-region (tree/node-at zipper pos))
-                       add-uneval (fn [pos] (replace-range cm "#_" (select-keys pos [:line :column])))
-                       remove-uneval (fn [pos] (replace-range cm "" (assoc (select-keys pos [:line :column]) :end-column (+ 2 (:column pos)))))
-                       bracket-node (z/node bracket-loc)]
-                   (if (.somethingSelected cm)
-                     (let [{:keys [line end-line] :as sel-pos} (selection-boundaries cm)]
-                       (if (= "#_" (subs (.getSelection cm) 0 2))
-                         (remove-uneval sel-pos)
-                         (do (add-uneval sel-pos)
-                             (select-range cm (cond-> sel-pos
-                                                      (= line end-line) (update :end-column #(+ % 2)))))))
+                 (uneval cm (tree/nearest-bracket-region (tree/node-at zipper pos))))
 
-                     (if-let [uneval-node (first (filter #(= :uneval (get % :tag))
-                                                         (list bracket-node (some-> bracket-loc z/up z/node))))]
-                       (remove-uneval uneval-node)
-                       (add-uneval bracket-node)))))
+               :uneval-top-level-form
+               (fn [{{:keys [pos]} :magic/cursor
+                     zipper        :zipper
+                     :as           cm}]
+                 (uneval cm (tree/top-loc (tree/node-at zipper pos))))
+
+
                :slurp
                (fn [{{:keys [pos]} :magic/cursor zipper :zipper :as cm}]
                  (let [loc (tree/node-at zipper pos)
@@ -255,9 +269,9 @@
              {}
              {"Ctrl-K"        :kill                         ;; cut to end of line / node
 
-              "Cmd-X"         :cut-at-point                 ;; cut/copy selection or
-              "Cmd-Backspace" :delete-at-point              ;; nearest node (highlighted).
-              "Cmd-C"         :copy-at-point
+              "Cmd-X"         :cut-form                     ;; cut/copy selection or
+              "Cmd-Backspace" :delete-form                  ;; nearest node (highlighted).
+              "Cmd-C"         :copy-form
 
               "Alt-Left"      :hop-left                     ;; move cursor left/right,
               "Alt-Right"     :hop-right                    ;; touch only node boundaries.
@@ -266,7 +280,8 @@
               "Cmd-2"         :shrink-selection
 
               "Cmd-/"         :comment-line
-              "Cmd-."         :uneval-at-point
+              "Cmd-;"         :uneval-form
+              "Cmd-Shift-;"   :uneval-top-level-form
 
               "Cmd-L"         :select-pipes
 
@@ -276,3 +291,4 @@
   [:ctrl "x"]       {:keys {[:ctrl "x"] {:exec :slurp}}}}
 '{#{:shift :cmd "k"} {:exec :slurp}
   #{:ctrl "x"}       {:keys {[:ctrl "x"] {:exec :slurp}}}}
+

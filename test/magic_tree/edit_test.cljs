@@ -12,8 +12,8 @@
     :kill "[1 2 |'a b c' 3 4]" "[1 2 |]"
     :kill "[1 2 '|a b c']" "[1 2 '|']"
 
-    :cut-at-point "|(+ 1)" "|"
-    :cut-at-point "(|+ 1)" "(| 1)"
+    :cut-form "|(+ 1)" "|"
+    :cut-form "(|+ 1)" "(| 1)"
 
     :hop-left "( )|" "|( )"
     :hop-left "( |)" "(| )"
@@ -24,6 +24,10 @@
     :comment-line "abc|\ndef" ";;abc\ndef|"
     :comment-line "abc\n|def" "abc\n;;def|"
     :comment-line "abc|" ";;abc|"
+
+    :uneval-form "|[]" "#_|[]"
+    :uneval-top-level-form "[[|]]" "#_[[|]]"
+    :uneval-top-level-form "[\n[|]]" "#_[\n[|]]"
 
     ))
 
