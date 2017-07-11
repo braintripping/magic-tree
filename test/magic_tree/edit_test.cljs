@@ -1,6 +1,6 @@
 (ns magic-tree.edit-test
   (:require [magic-tree-codemirror.addons]
-            [magic-tree-codemirror.edit :refer [munge-command-key]]
+            [magic-tree-codemirror.edit :as edit]
             [magic-tree.test-utils :refer [test-exec]]
             [cljs.test :refer-macros [deftest is are]]))
 
@@ -8,27 +8,25 @@
   (are [cmd source post-source]
     (= (test-exec cmd source) post-source)
 
-    :kill "(prn 1 |2 3)" "(prn 1 |)"
-    :kill "[1 2 |'a b c' 3 4]" "[1 2 |]"
-    :kill "[1 2 '|a b c']" "[1 2 '|']"
+    edit/kill "(prn 1 |2 3)" "(prn 1 |)"
+    edit/kill "[1 2 |'a b c' 3 4]" "[1 2 |]"
+    edit/kill "[1 2 '|a b c']" "[1 2 '|']"
 
-    :cut-form "|(+ 1)" "|"
-    :cut-form "(|+ 1)" "(| 1)"
+    edit/cut-form "|(+ 1)" "|"
+    edit/cut-form "(|+ 1)" "(| 1)"
 
-    :hop-left "( )|" "|( )"
-    :hop-left "( |)" "(| )"
-    :hop-left "( a|)" "( |a)"
-    :hop-left "( ab|c)" "( |abc)"
-    :hop-left "((|))" "(|())"
+    edit/hop-left "( )|" "|( )"
+    edit/hop-left "( |)" "(| )"
+    edit/hop-left "( a|)" "( |a)"
+    edit/hop-left "( ab|c)" "( |abc)"
+    edit/hop-left "((|))" "(|())"
 
-    :comment-line "abc|\ndef" ";;abc\ndef|"
-    :comment-line "abc\n|def" "abc\n;;def|"
-    :comment-line "abc|" ";;abc|"
+    edit/comment-line "abc|\ndef" ";;abc\ndef|"
+    edit/comment-line "abc\n|def" "abc\n;;def|"
+    edit/comment-line "abc|" ";;abc|"
 
-    :uneval-form "|[]" "#_|[]"
-    :uneval-top-level-form "[[|]]" "#_[[|]]"
-    :uneval-top-level-form "[\n[|]]" "#_[\n[|]]"
-
-    ))
+    edit/uneval-form "|[]" "#_|[]"
+    edit/uneval-top-level-form "[[|]]" "#_[[|]]"
+    edit/uneval-top-level-form "[\n[|]]" "#_[\n[|]]"))
 
 

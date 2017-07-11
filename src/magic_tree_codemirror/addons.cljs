@@ -5,8 +5,7 @@
             [goog.events :as events]
             [cljs.pprint :refer [pprint]]
             [magic-tree.core :as tree]
-            [magic-tree-codemirror.util :as cm]
-            [magic-tree-codemirror.edit :refer [key-map]]))
+            [magic-tree-codemirror.util :as cm]))
 
 (specify! (.-prototype js/CodeMirror)
   ILookup
@@ -119,9 +118,3 @@
                      (events/listen el "mousemove" (partial update-highlights! cm)))
 
                    (swap! cm assoc :magic/brackets? true))))
-
-(.defineOption js/CodeMirror "magicEdit" false
-               (fn [cm kmap]
-                 (when kmap
-                   (.addKeyMap cm (clj->js (cond-> key-map
-                                                   (map? kmap) (merge kmap)))))))

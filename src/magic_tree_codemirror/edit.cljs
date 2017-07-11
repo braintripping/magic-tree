@@ -130,165 +130,130 @@
         (remove-uneval uneval-node)
         (add-uneval bracket-node)))))
 
-(def commands {:kill
-               (fn [{{pos :pos loc :loc} :magic/cursor :as cm}]
-                 (if (.somethingSelected cm)
-                   pass
-                   (->> (get-kill-range pos loc)
-                        (cut-range cm))))
 
-               #_:delete
-               ;; early, awkward attempt at handling brackets
-               #_(fn [cm]
-                   (if (.somethingSelected cm)
-                     pass
-                     (doseq [selection (reverse (.listSelections cm))]
-                       (let [pos (move-char cm (.-head selection) -1)
-                             char (char-at cm pos)]
-                         (do (when-not (#{\) \] \}} char)
-                               (.replaceRange cm "" (.-head selection) pos))
-                             #js {"anchor" (.-head selection)
-                                  "head"   (.-head selection)})
+(def kill
+  (fn [{{pos :pos loc :loc} :magic/cursor :as cm}]
+    (if (.somethingSelected cm)
+      pass
+      (->> (get-kill-range pos loc)
+           (cut-range cm)))))
 
-                         ))))
+#_:delete
+;;(def arly, awkward attempt at handling brackets
+#_(fn [cm]
+    (if (.somethingSelected cm)
+      pass
+      (doseq [selection (reverse (.listSelections cm))]
+        (let [pos (move-char cm (.-head selection) -1)
+              char (char-at cm pos)]
+          (do (when-not (#{\) \] \}} char)
+                (.replaceRange cm "" (.-head selection) pos))
+              #js {"anchor" (.-head selection)
+                   "head"   (.-head selection)})
 
-               :copy-form
-               (fn [cm] (if (.somethingSelected cm)
-                          pass
-                          (copy-range cm (get-in cm [:magic/cursor :bracket-node]))))
+          ))))
 
-               :cut-form
-               (fn [cm] (if (.somethingSelected cm)
-                          pass
-                          (cut-range cm (get-in cm [:magic/cursor :bracket-node]))))
+(def copy-form
+  (fn [cm] (if (.somethingSelected cm)
+             pass
+             (copy-range cm (get-in cm [:magic/cursor :bracket-node])))))
 
-               :delete-form
-               (fn [cm] (if (.somethingSelected cm)
-                          pass
-                          (replace-range cm "" (get-in cm [:magic/cursor :bracket-node]))))
+(def cut-form
+  (fn [cm] (if (.somethingSelected cm)
+             pass
+             (cut-range cm (get-in cm [:magic/cursor :bracket-node])))))
 
-               :hop-left
-               (cursor-boundary-skip :left)
+(def delete-form
+  (fn [cm] (if (.somethingSelected cm)
+             pass
+             (replace-range cm "" (get-in cm [:magic/cursor :bracket-node])))))
 
-               :hop-right
-               (cursor-boundary-skip :right)
+(def hop-left
+  (cursor-boundary-skip :left))
 
-               :expand-selection
-               (fn [{{:keys [bracket-node] cursor-pos :pos} :magic/cursor
-                     zipper                                 :zipper
-                     :as                                    cm}]
-                 (let [sel (selection-boundaries cm)
-                       loc (tree/node-at zipper sel)
-                       node (z/node loc)
-                       parent (some-> (z/up loc) z/node)
-                       select #(when %
-                                 (select-range cm %)
-                                 (swap! cm update-in [:magic/cursor :stack] conj (tree/boundaries %)))]
-                   (cond
-                     (not (.somethingSelected cm))
-                     (do (swap! cm assoc-in [:magic/cursor :stack] (list (selection-boundaries cm)))
-                         (.magicClearHighlight cm)
-                         (select (let [node (if (tree/comment? node) node bracket-node)]
-                                   (or (when (tree/inside? node cursor-pos) (tree/inner-range node))
-                                       node))))
-                     (= sel (tree/inner-range parent)) (select parent)
-                     (pos= sel (tree/boundaries node)) (select (or (tree/inner-range parent) parent))
-                     (= sel (tree/inner-range node)) (select node)
-                     :else nil)))
+(def hop-right
+  (cursor-boundary-skip :right))
 
-               :shrink-selection
-               (fn [cm]
-                 (when-let [stack (get-in cm [:magic/cursor :stack])]
-                   (let [stack (cond-> stack
-                                       (or (:base (first stack))
-                                           (= (selection-boundaries cm) (first stack))) rest)]
-                     (some->> (first stack) (select-range cm))
-                     (swap! cm update-in [:magic/cursor :stack] rest))))
+(def expand-selection
+  (fn [{{:keys [bracket-node] cursor-pos :pos} :magic/cursor
+        zipper                                 :zipper
+        :as                                    cm}]
+    (let [sel (selection-boundaries cm)
+          loc (tree/node-at zipper sel)
+          node (z/node loc)
+          parent (some-> (z/up loc) z/node)
+          select #(when %
+                    (select-range cm %)
+                    (swap! cm update-in [:magic/cursor :stack] conj (tree/boundaries %)))]
+      (cond
+        (not (.somethingSelected cm))
+        (do (swap! cm assoc-in [:magic/cursor :stack] (list (selection-boundaries cm)))
+            (.magicClearHighlight cm)
+            (select (let [node (if (tree/comment? node) node bracket-node)]
+                      (or (when (tree/inside? node cursor-pos) (tree/inner-range node))
+                          node))))
+        (= sel (tree/inner-range parent)) (select parent)
+        (pos= sel (tree/boundaries node)) (select (or (tree/inner-range parent) parent))
+        (= sel (tree/inner-range node)) (select node)
+        :else nil))))
 
-               :comment-line
-               (fn [{zipper :zipper :as cm}]
-                 (let [{line-n :line column-n :column} (get-in cm [:magic/cursor :pos])
-                       [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
-                       [space-n semicolon-n] (map count [spaces semicolons])]
-                   (if (> semicolon-n 0)
-                     (replace-range cm "" {:line line-n :column space-n :end-column (+ space-n semicolon-n)})
-                     (let [{:keys [end-line end-column]} (some-> (tree/node-at zipper {:line line-n :column 0})
-                                                                 z/up
-                                                                 z/node)]
-                       (when (= line-n end-line)
-                         (replace-range cm (str "\n" spaces) {:line line-n :column (dec end-column)}))
-                       (replace-range cm ";;" {:line line-n :column space-n})))
-                   (.setCursor cm #js {:line (inc line-n)
-                                       :ch   column-n})))
+(def shrink-selection
+  (fn [cm]
+    (when-let [stack (get-in cm [:magic/cursor :stack])]
+      (let [stack (cond-> stack
+                          (or (:base (first stack))
+                              (= (selection-boundaries cm) (first stack))) rest)]
+        (some->> (first stack) (select-range cm))
+        (swap! cm update-in [:magic/cursor :stack] rest)))))
 
-               :uneval-form
-               (fn [{{:keys [pos]} :magic/cursor
-                     zipper        :zipper
-                     :as           cm}]
-                 (uneval cm (tree/nearest-bracket-region (tree/node-at zipper pos))))
+(def comment-line
+  (fn [{zipper :zipper :as cm}]
+    (let [{line-n :line column-n :column} (get-in cm [:magic/cursor :pos])
+          [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
+          [space-n semicolon-n] (map count [spaces semicolons])]
+      (if (> semicolon-n 0)
+        (replace-range cm "" {:line line-n :column space-n :end-column (+ space-n semicolon-n)})
+        (let [{:keys [end-line end-column]} (some-> (tree/node-at zipper {:line line-n :column 0})
+                                                    z/up
+                                                    z/node)]
+          (when (= line-n end-line)
+            (replace-range cm (str "\n" spaces) {:line line-n :column (dec end-column)}))
+          (replace-range cm ";;" {:line line-n :column space-n})))
+      (.setCursor cm #js {:line (inc line-n)
+                          :ch   column-n}))))
 
-               :uneval-top-level-form
-               (fn [{{:keys [pos]} :magic/cursor
-                     zipper        :zipper
-                     :as           cm}]
-                 (uneval cm (tree/top-loc (tree/node-at zipper pos))))
+(def uneval-form
+  (fn [{{:keys [pos]} :magic/cursor
+        zipper        :zipper
+        :as           cm}]
+    (uneval cm (tree/nearest-bracket-region (tree/node-at zipper pos)))))
+
+(def uneval-top-level-form
+  (fn [{{:keys [pos]} :magic/cursor
+        zipper        :zipper
+        :as           cm}]
+    (uneval cm (tree/top-loc (tree/node-at zipper pos)))))
 
 
-               :slurp
-               (fn [{{:keys [pos]} :magic/cursor zipper :zipper :as cm}]
-                 (let [loc (tree/node-at zipper pos)
-                       loc (cond-> loc
-                                   (and (or (not (tree/may-contain-children? (z/node loc)))
-                                            (not (tree/inside? (z/node loc) pos)))) z/up)
-                       {:keys [tag] :as node} (z/node loc)]
-                   (when-not (= :base tag)
-                     (when-let [next-form (some->> (z/rights loc)
-                                                   (filter tree/sexp?)
-                                                   first)]
-                       (let [[_ rb] (get tree/edges tag)]
-                         (replace-range cm rb (tree/boundaries next-form :right))
-                         (replace-range cm "" (-> (tree/boundaries node :right)
-                                                  (assoc :end-column (dec (:end-column node))))))))))
+(def slurp
+  (fn [{{:keys [pos]} :magic/cursor zipper :zipper :as cm}]
+    (let [loc (tree/node-at zipper pos)
+          loc (cond-> loc
+                      (and (or (not (tree/may-contain-children? (z/node loc)))
+                               (not (tree/inside? (z/node loc) pos)))) z/up)
+          {:keys [tag] :as node} (z/node loc)]
+      (when-not (= :base tag)
+        (when-let [next-form (some->> (z/rights loc)
+                                      (filter tree/sexp?)
+                                      first)]
+          (let [[_ rb] (get tree/edges tag)]
+            (replace-range cm rb (tree/boundaries next-form :right))
+            (replace-range cm "" (-> (tree/boundaries node :right)
+                                     (assoc :end-column (dec (:end-column node)))))))))))
 
-               :select-pipes
-               (fn [cm]
-                 (let [sels (.listSelections cm)]
-                   (.replaceSelections cm (clj->js (take (count sels) (repeat "|"))))))})
+(def select-pipes
+  (fn [cm]
+    (let [sels (.listSelections cm)]
+      (.replaceSelections cm (clj->js (take (count sels) (repeat "|")))))))
 
-(defn munge-command-key [k]
-  (munge (str "magic_"
-              (when (keyword? k) (some-> (namespace k) (str "_")))
-              (name k))))
-
-(def key-map
-  (reduce-kv (fn [m k command-key]
-               (let [command-f (get commands command-key #(println (str "Command missing: " command-key)))
-                     command-name (munge-command-key command-key)]
-                 (aset js/CodeMirror "commands" command-name command-f)
-                 (assoc m k command-name)))
-             {}
-             {"Ctrl-K"        :kill                         ;; cut to end of line / node
-
-              "Cmd-X"         :cut-form                     ;; cut/copy selection or
-              "Cmd-Backspace" :delete-form                  ;; nearest node (highlighted).
-              "Cmd-C"         :copy-form
-
-              "Alt-Left"      :hop-left                     ;; move cursor left/right,
-              "Alt-Right"     :hop-right                    ;; touch only node boundaries.
-
-              "Cmd-1"         :expand-selection
-              "Cmd-2"         :shrink-selection
-
-              "Cmd-/"         :comment-line
-              "Cmd-;"         :uneval-form
-              "Cmd-Shift-;"   :uneval-top-level-form
-
-              "Cmd-L"         :select-pipes
-
-              "Shift-Cmd-K"   :slurp}))
-
-'{[:shift :cmd "k"] {:exec :slurp}
-  [:ctrl "x"]       {:keys {[:ctrl "x"] {:exec :slurp}}}}
-'{#{:shift :cmd "k"} {:exec :slurp}
-  #{:ctrl "x"}       {:keys {[:ctrl "x"] {:exec :slurp}}}}
 

@@ -1,6 +1,5 @@
 (ns magic-tree.test-utils
   (:require [magic-tree-codemirror.addons]
-            [magic-tree-codemirror.edit :refer [munge-command-key]]
             [clojure.string :as string]))
 
 
@@ -8,8 +7,7 @@
   (memoize (fn []
              (js/CodeMirror (.appendChild js/document.body (.createElement js/document "div"))
                             (clj->js {:mode          "clojure"
-                                      :magicBrackets true
-                                      :magicEdit     true})))))
+                                      :magicBrackets true})))))
 
 (defn replace-selections
   [cm s]
@@ -29,7 +27,7 @@
     cm))
 
 (defn exec [cm command]
-  (.execCommand cm (munge-command-key command))
+  (command cm)
   cm)
 
 (defn test-exec [command pre-source]
