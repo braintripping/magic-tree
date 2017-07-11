@@ -4,7 +4,7 @@
             [magic-tree.test-utils :refer [test-exec]]
             [cljs.test :refer-macros [deftest is are]]))
 
-#_(deftest edit-commands
+(deftest edit-commands
   (are [cmd source post-source]
     (= (test-exec cmd source) post-source)
 
@@ -22,6 +22,7 @@
     :hop-left "((|))" "(|())"
 
     :comment-line "abc|\ndef" ";;abc\ndef|"
+    :comment-line "abc\n|def" "abc\n;;def|"
     :comment-line "abc|" ";;abc|"
 
     ))

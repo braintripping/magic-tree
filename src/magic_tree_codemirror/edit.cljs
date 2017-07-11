@@ -186,7 +186,7 @@
 
                :comment-line
                (fn [{zipper :zipper :as cm}]
-                 (let [{line-n :line column-n :column} (get-in cm [:magic/sursor :pos])
+                 (let [{line-n :line column-n :column} (get-in cm [:magic/cursor :pos])
                        [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
                        [space-n semicolon-n] (map count [spaces semicolons])]
                    (if (> semicolon-n 0)
