@@ -64,12 +64,24 @@
         (swap! cm assoc-in [:magic/cursor :handles]
                (cm/mark-ranges! cm (tree/node-highlights node) #js {:className "CodeMirror-matchingbracket"}))))))
 
+(defn clear-parse-errors! [cm]
+  (doseq [handle (get-in cm [:magic/errors :handles])]
+    (.clear handle))
+  (swap! cm update :magic/errors dissoc :handles))
+
+(defn highlight-parse-errors! [cm errors]
+  (let [error-ranges (map (comp :position second) errors)
+        handles (cm/mark-ranges! cm error-ranges #js {:className "CodeMirror-unmatchedBracket"})]
+    (swap! cm assoc-in [:magic/errors :handles] handles)))
+
 (defn update-ast!
   [{:keys [ast] :as cm}]
   (when-let [{:keys [errors] :as next-ast} (try (tree/ast (.getValue cm))
                                                 (catch js/Error e (.debug js/console e)))]
     (when (not= next-ast ast)
-      (when (seq errors) (prn :ast-errors! errors))
+      (clear-parse-errors! cm)
+      (when-let [error (first errors)]
+        (highlight-parse-errors! cm [error]))
       (if (seq errors)
         (swap! cm dissoc :ast :zipper)
         (swap! cm assoc

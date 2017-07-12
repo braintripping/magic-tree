@@ -179,9 +179,14 @@
         :map) [tag (parse-delim reader (get brackets c))]
 
       :matched-delimiter (do (rd/ignore reader) nil)
-      (:eof :unmatched-delimiter) (do (rd/ignore reader)
-                                      (error! [:error/missing-delimiter {:position  (rd/position reader)
-                                                                         :delimiter *delimiter*}]))
+      (:eof :unmatched-delimiter) (let [the-error (error! [(keyword "error" (name tag)) (let [pos (rd/position reader)]
+                                                                                          {:position  {:line       (aget pos 0)
+                                                                                                       :column     (aget pos 1)
+                                                                                                       :end-line   (aget pos 0)
+                                                                                                       :end-column (inc (aget pos 1))}
+                                                                                           :delimiter *delimiter*})])]
+                                    (rd/ignore reader)
+                                    the-error)
       :meta (do (rd/ignore reader)
                 [tag (parse-printables reader :meta 2)])
       :string [tag (rd/read-string-data reader)])))
