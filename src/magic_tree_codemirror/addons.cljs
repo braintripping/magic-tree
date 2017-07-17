@@ -39,7 +39,9 @@
 
 (defn reset-highlight! [cm meta-key shift-key bracket-loc]
   (clear-highlight! cm)
-  (when-let [loc (case [meta-key shift-key]
+  (when meta-key
+    (some->> (z/node bracket-loc) (highlight-node! cm)))
+  #_(when-let [loc (case [meta-key shift-key]
                    [true false] bracket-loc
                    [true true] (some-> bracket-loc (tree/top-loc))
                    nil)]
@@ -71,22 +73,28 @@
 
 (defn highlight-parse-errors! [cm errors]
   (let [error-ranges (map (comp :position second) errors)
+        ;; TODO
+        ;; derive className from error name, not all errors are unmatched brackets.
+        ;; (somehow) add a tooltip or other attribute to the marker (for explanation).
         handles (cm/mark-ranges! cm error-ranges #js {:className "CodeMirror-unmatchedBracket"})]
     (swap! cm assoc-in [:magic/errors :handles] handles)))
 
 (defn update-ast!
-  [{:keys [ast] :as cm}]
+  [{:keys [ast on-ast-update] :as cm}]
   (when-let [{:keys [errors] :as next-ast} (try (tree/ast (.getValue cm))
                                                 (catch js/Error e (.debug js/console e)))]
     (when (not= next-ast ast)
-      (clear-parse-errors! cm)
-      (when-let [error (first errors)]
-        (highlight-parse-errors! cm [error]))
-      (if (seq errors)
-        (swap! cm dissoc :ast :zipper)
-        (swap! cm assoc
-               :ast next-ast
-               :zipper (tree/ast-zip next-ast))))))
+      (let [next-zip (tree/ast-zip next-ast)]
+        (clear-parse-errors! cm)
+        (when-let [error (first errors)]
+          (highlight-parse-errors! cm [error]))
+        (when on-ast-update
+          (on-ast-update cm next-ast next-zip))
+        (if (seq errors)
+          (swap! cm dissoc :ast :zipper)
+          (swap! cm assoc
+                 :ast next-ast
+                 :zipper next-zip))))))
 
 (defn update-cursor!
   [{:keys [zipper magic/brackets?] :as cm}]
