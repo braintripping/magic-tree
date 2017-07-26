@@ -12,10 +12,6 @@ Magic Tree parses Clojure code into an AST suitable for powering smart, structur
 2. Traverse and edit as desired.
 3. Emit Clojure (`magic-tree.core/string` or `magic-tree.core/sexp`) with existing whitespace intact.
 
-## Usage with CodeMirror
-
-The `magic-tree-codemirror` namespaces include work on bracket highlighting and paredit functionality. Implementing editor behaviour is hard to do in a general way and so this code is tightly coupled to CodeMirror. This code should be considered temporary 'scratch' code that **will not** be maintained indefinitely.
-
 An example of real-world usage can be found in [Maria](https://github.com/mhuebert/maria), a beginner-friendly ClojureScript REPL.
 
 ## Testing
