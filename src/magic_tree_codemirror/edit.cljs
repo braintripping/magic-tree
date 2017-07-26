@@ -208,37 +208,31 @@
 
 (def comment-line
   (fn [{zipper :zipper :as cm}]
-    (let [{line-n :line column-n :column} (get-in cm [:magic/cursor :pos])
-          [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
-          [space-n semicolon-n] (map count [spaces semicolons])]
-      (if (> semicolon-n 0)
-        (replace-range cm "" {:line line-n :column space-n :end-column (+ space-n semicolon-n)})
-        (let [{:keys [end-line end-column]} (some-> (tree/node-at zipper {:line line-n :column 0})
-                                                    z/up
-                                                    z/node)]
-          (when (= line-n end-line)
-            (replace-range cm (str "\n" spaces) {:line line-n :column (dec end-column)}))
-          (replace-range cm ";;" {:line line-n :column space-n})))
-      (.setCursor cm #js {:line (inc line-n)
-                          :ch   column-n}))))
+    (.operation cm
+                #(let [{line-n :line column-n :column} (get-in cm [:magic/cursor :pos])
+                      [spaces semicolons] (rest (re-find #"^(\s*)(;+)?" (.getLine cm line-n)))
+                      [space-n semicolon-n] (map count [spaces semicolons])]
+                  (if (> semicolon-n 0)
+                    (replace-range cm "" {:line line-n :column space-n :end-column (+ space-n semicolon-n)})
+                    (let [{:keys [end-line end-column]} (some-> (tree/node-at zipper {:line line-n :column 0})
+                                                                z/up
+                                                                z/node)]
+                      (when (= line-n end-line)
+                        (replace-range cm (str "\n" spaces) {:line line-n :column (dec end-column)}))
+                      (replace-range cm ";;" {:line line-n :column space-n})))
+                  (.setCursor cm #js {:line (inc line-n)
+                                      :ch   column-n})))))
 
 (def uneval-form
-  (fn [{{:keys [pos]} :magic/cursor
-        zipper        :zipper
-        :as           cm}]
-    (uneval cm (tree/nearest-bracket-region (tree/node-at zipper pos)))))
-
-(def uneval-top-level-form
-  (fn [{{:keys [pos]} :magic/cursor
-        zipper        :zipper
-        :as           cm}]
-    (uneval cm (tree/top-loc (tree/node-at zipper pos)))))
-
+  (fn [{{:keys [bracket-loc]} :magic/cursor
+        zipper                :zipper
+        :as                   cm}]
+    (uneval cm bracket-loc)))
 
 (def slurp
-  (fn [{{:keys [pos]} :magic/cursor zipper :zipper :as cm}]
-    (let [loc (tree/node-at zipper pos)
-          loc (cond-> loc
+  (fn [{{:keys [loc pos]} :magic/cursor
+        :as               cm}]
+    (let [loc (cond-> loc
                       (and (or (not (tree/may-contain-children? (z/node loc)))
                                (not (tree/inside? (z/node loc) pos)))) z/up)
           {:keys [tag] :as node} (z/node loc)]
@@ -246,10 +240,10 @@
         (when-let [next-form (some->> (z/rights loc)
                                       (filter tree/sexp?)
                                       first)]
-          (let [[_ rb] (get tree/edges tag)]
-            (replace-range cm rb (tree/boundaries next-form :right))
-            (replace-range cm "" (-> (tree/boundaries node :right)
-                                     (assoc :end-column (dec (:end-column node)))))))))))
+          (.operation cm #(let [[_ rb] (get tree/edges tag)]
+                            (replace-range cm rb (tree/boundaries next-form :right))
+                            (replace-range cm "" (-> (tree/boundaries node :right)
+                                                     (assoc :end-column (dec (:end-column node))))))))))))
 
 (def select-pipes
   (fn [cm]

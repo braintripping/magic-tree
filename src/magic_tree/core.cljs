@@ -56,7 +56,7 @@
 
 (def node-at nav/navigate)
 (def mouse-eval-region nav/mouse-eval-region)
-(def nearest-bracket-region nav/nearest-bracket-region)
+(def nearest-bracket-region nav/nearest-highlight-region)
 
 
 ;; Ranges

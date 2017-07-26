@@ -10,9 +10,6 @@
   (take-while identity (iterate z/right (z/right loc))))
 (defn left-locs [loc]
   (take-while identity (iterate z/left (z/left loc))))
-(defn top-loc [loc]
-  (first (filter #(or (= :base (get (z/node %) :tag))
-                      (= :base (get (z/node (z/up %)) :tag))) (iterate z/up loc))))
 
 (defn navigate
   "Navigate to a position within a zipper (returns loc) or ast (returns node)."
@@ -53,11 +50,16 @@
   (or (and (n/sexp? (z/node loc)) loc)
       (z/up loc)))
 
-(defn nearest-bracket-region
-  "Highlight brackets for specified sexp, or nearest sexp to the left, or parent."
+(defn nearest-highlight-region
+  "Current sexp, or nearest sexp to the left, or parent."
   [loc]
   (or (->> (cons loc (left-locs loc))
            (filter (comp #(or (n/sexp? %)
                               (= :uneval (get % :tag))) z/node))
            first)
       (z/up loc)))
+
+(defn top-loc [loc]
+  (let [loc (nearest-highlight-region loc)]
+    (first (filter #(or (= :base (get (z/node %) :tag))
+                        (= :base (get (z/node (z/up %)) :tag))) (iterate z/up loc)))))
