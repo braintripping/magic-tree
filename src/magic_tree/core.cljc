@@ -5,10 +5,7 @@
             [magic-tree.node :as n]
             [magic-tree.nav :as nav]
             [magic-tree.range :as range]
-
-            [fast-zip.core :as z]
-            [cljs.test :refer [is are]]))
-
+            [fast-zip.core :as z]))
 
 ;; Parse
 
@@ -92,8 +89,8 @@
     (reset! log [])
     (let [result-node (node-at (ast sample-str) {:line   line
                                                  :column column})]
-      (is (= (sexp result-node) result-sexp))
-      (is (= (string result-node) result-string)))))
+      (assert (= (sexp result-node) result-sexp))
+      (assert (= (string result-node) result-string)))))
 
 (comment
   (let [sample-code-string ""]

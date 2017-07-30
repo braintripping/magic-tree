@@ -9,6 +9,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.293"]
                  [org.clojure/core.match "0.3.0-alpha4"]
+                 [org.clojure/tools.reader "1.0.2"]
                  [fast-zip "0.7.0"]
                  [cljsjs/codemirror "5.19.0-0"]]
 

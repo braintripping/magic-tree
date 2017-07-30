@@ -1,7 +1,7 @@
 (ns magic-tree.emit
   (:refer-clojure :exclude [*ns*])
-  (:require [cljs.tools.reader.edn :as edn]
-            [cljs.tools.reader :as r]
+  (:require [clojure.tools.reader.edn :as edn]
+            [clojure.tools.reader :as r]
             [fast-zip.core :as z]
             [magic-tree.fn :refer [fn-walk]])
   (:require-macros [magic-tree.backtick :refer [template]]))

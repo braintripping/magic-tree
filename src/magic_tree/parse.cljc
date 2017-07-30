@@ -3,10 +3,9 @@
 
 (ns magic-tree.parse
   (:require [magic-tree.reader :as rd]
-            [cljs.pprint :refer [pprint]]
-            [cljs.tools.reader.reader-types :as r]
-            [cljs.tools.reader.edn :as edn]
-            [cljs.test :refer [is are]]))
+            [clojure.pprint :refer [pprint]]
+            [clojure.tools.reader.reader-types :as r]
+            [clojure.tools.reader.edn :as edn]))
 
 (enable-console-print!)
 
@@ -19,31 +18,57 @@
 (def ^:dynamic ^:private *delimiter* nil)
 (declare parse-next)
 
-(def whitespace-chars #js [\, " " "\n" "\r"])
+;; identical? lookups are 10x faster than set-contains and 2x faster than js-array indexOf
+
 (defn ^:boolean whitespace?
   [c]
-  (< -1 (.indexOf whitespace-chars c)))
+  (or (identical? c \,)
+      (identical? c " ")
+      (identical? c "\n")
+      (identical? c "\r")))
 
-(def boundary-chars #js [\" \: \; \' \@ \^ \` \~ \( \) \[ \] \{ \} \\ nil])
 (defn ^:boolean boundary?
   [c]
   "Check whether a given char is a token boundary."
-  (< -1 (.indexOf boundary-chars c)))
+  (or (identical? c \")
+      (identical? c \:)
+      (identical? c \;)
+      (identical? c \')
+      (identical? c \@)
+      (identical? c \^)
+      (identical? c \`)
+      (identical? c \~)
+      (identical? c \()
+      (identical? c \))
+      (identical? c \[)
+      (identical? c \])
+      (identical? c \{)
+      (identical? c \})
+      (identical? c \\)
+      (identical? c nil)))
+
+(defn ^:boolean vector-contains?
+  [v item]
+  (let [end (count v)]
+    (loop [i 0]
+      (cond (= i end) false
+            (identical? (v i) item) true
+            :else (recur (inc i))))))
 
 (defn- read-to-boundary
   [reader allowed]
   (rd/read-until
     reader
-    #(and (not (< -1 (.indexOf allowed %)))
-          (or (whitespace? %)
-              (boundary? %)))))
+    #(and (or (whitespace? %)
+              (boundary? %))
+          (not (allowed %)))))
 
 (defn- read-to-char-boundary
   [reader]
   (let [c (rd/next reader)]
     (str c
          (if ^:boolean (not (identical? c \\))
-           (read-to-boundary reader #js [])
+           (read-to-boundary reader #{})
            ""))))
 
 (defn string->edn
@@ -73,6 +98,34 @@
                 \" :string
                 \: :keyword
                 :token)))
+
+(defn- dispatch
+  [c]
+  (cond (identical? c *delimiter*) :matched-delimiter
+        (nil? c) :eof
+
+        (identical? c \,) :comma
+        (identical? c " ") :space
+        (identical? c "\n") :newline
+        (identical? c "\r") :newline
+        (identical? c \^) :meta
+        (identical? c \#) :sharp
+        (identical? c \() :list
+        (identical? c \[) :vector
+        (identical? c \{) :map
+
+        (identical? c \}) :unmatched-delimiter
+        (identical? c \]) :unmatched-delimiter
+        (identical? c \)) :unmatched-delimiter
+
+        (identical? c \~) :unquote
+        (identical? c \') :quote
+        (identical? c \`) :syntax-quote
+        (identical? c \;) :comment
+        (identical? c \@) :deref
+        (identical? c \") :string
+        (identical? c \:) :keyword
+        :else :token))
 
 (defn- parse-delim
   [reader delimiter]
@@ -105,10 +158,10 @@
   (let [first-char (rd/next reader)
         s (->> (if ^:boolean (identical? first-char \\)
                  (read-to-char-boundary reader)
-                 (read-to-boundary reader #js []))
+                 (read-to-boundary reader #{}))
                (str first-char))]
     [:token (str s (when ^:boolean (symbol? (string->edn s))
-                     (read-to-boundary reader #js [\' \:])))]))
+                     (read-to-boundary reader #{\' \:})))]))
 
 (defn parse-keyword
   [reader]
@@ -179,11 +232,11 @@
         :map) [tag (parse-delim reader (get brackets c))]
 
       :matched-delimiter (do (rd/ignore reader) nil)
-      (:eof :unmatched-delimiter) (let [the-error (error! [(keyword "error" (name tag)) (let [pos (rd/position reader)]
-                                                                                          {:position  {:line       (aget pos 0)
-                                                                                                       :column     (aget pos 1)
-                                                                                                       :end-line   (aget pos 0)
-                                                                                                       :end-column (inc (aget pos 1))}
+      (:eof :unmatched-delimiter) (let [the-error (error! [(keyword "error" (name tag)) (let [[line col] (rd/position reader)]
+                                                                                          {:position  {:line       line
+                                                                                                       :column     col
+                                                                                                       :end-line   line
+                                                                                                       :end-column (inc col)}
                                                                                            :delimiter *delimiter*})])]
                                     (rd/ignore reader)
                                     the-error)

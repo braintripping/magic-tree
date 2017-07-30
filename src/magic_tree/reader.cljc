@@ -1,7 +1,7 @@
 (ns magic-tree.reader
   (:refer-clojure :exclude [peek next])
-  (:require [cljs.tools.reader.reader-types :as r])
-  (:import [goog.string StringBuffer]))
+  (:require [clojure.tools.reader.reader-types :as r])
+  #?(:cljs (:import [goog.string StringBuffer])))
 
 (def peek r/peek-char)
 
@@ -11,11 +11,13 @@
   (let [c (r/get-column-number reader)
         l (r/get-line-number reader)]
     (throw
-      (js/Error
+      (#?(:cljs js/Error
+          :clj  Exception.)
         (str fmt data
              " [at line " l ", column " c "]")))))
 
-(def buf (StringBuffer.))
+(def buf #?(:cljs (StringBuffer.)
+            :clj  (StringBuilder.)))
 
 (defn read-while
   "Read while the chars fulfill the given condition. Ignores
@@ -24,7 +26,8 @@
   (let [eof? (if ^:boolean (nil? eof?)
                (not (p? nil))
                eof?)]
-    (.clear buf)
+    #?(:cljs (.clear buf)
+       :clj  (.setLength buf 0))
     (loop []
       (if-let [c (r/read-char reader)]
         (if ^:boolean (p? c)
@@ -33,9 +36,11 @@
             (recur))
           (do
             (r/unread reader c)
-            (.toString buf)))
+            #?(:cljs (.toString buf)
+               :clj  (str buf))))
         (if ^:boolean eof?
-          (.toString buf)
+          #?(:cljs (.toString buf)
+             :clj  (str buf))
           (throw-reader reader "Unexpected EOF."))))))
 
 (defn read-until
@@ -74,10 +79,10 @@
             (recur reader (conj out next-node))))))
 
 (defn position
-  "Create map of `row-k` and `col-k` representing the current reader position."
+  "Returns 0-indexed vector of [line, column] for current reader position."
   [^not-native reader]
-  #js [(dec (r/get-line-number reader) )
-       (dec (r/get-column-number reader))])
+  [(dec (r/get-line-number reader))
+   (dec (r/get-column-number reader))])
 
 (defn read-with-position
   "Use the given function to read value, then attach row/col metadata."
@@ -119,11 +124,13 @@
 (defn- read-string-data
   [^not-native reader]
   (ignore reader)
-  (.clear buf)
+  #?(:cljs (.clear buf)
+     :clj  (.setLength buf 0))
   (loop [escape? false]
     (if-let [c (r/read-char reader)]
       (cond (and (not escape?) (identical? c \"))
-            (.toString buf)
+            #?(:cljs (.toString buf)
+               :clj  (str buf))
             :else
             (do
               (.append buf c)
