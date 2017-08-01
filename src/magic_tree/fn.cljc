@@ -20,8 +20,10 @@
   [n]
   (cond (= n "&") 0
         (= n "") 1
-        (re-matches #"\d+" n) (js/parseInt n)
-        :else (throw (js/Error. "arg literal must be %, %& or %integer."))))
+        (re-matches #"\d+" n) (#?(:cljs js/parseInt
+                                  :clj Integer.) n)
+        :else (throw (#?(:cljs js/Error.
+                         :clj Exception.) "arg literal must be %, %& or %integer."))))
 
 ;; TODO: No promises available
 (defn- symbol->gensym
