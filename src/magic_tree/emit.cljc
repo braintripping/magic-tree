@@ -3,8 +3,9 @@
   (:require [clojure.tools.reader.edn :as edn]
             [clojure.tools.reader :as r]
             [fast-zip.core :as z]
-            [magic-tree.fn :refer [fn-walk]])
-  (:require-macros [magic-tree.backtick :refer [template]]))
+            [magic-tree.fn :refer [fn-walk]]
+            #?(:clj [magic-tree.backtick :refer [template]]))
+  #?(:cljs (:require-macros [magic-tree.backtick :refer [template]])))
 
 
 
@@ -105,7 +106,8 @@
 
   (when node
     (if (= "error" (namespace tag))
-      (throw (js/Error node))
+      (throw (#?(:cljs js/Error
+                 :clj Exception.) node))
       (case tag
         :base (as-code value)
 

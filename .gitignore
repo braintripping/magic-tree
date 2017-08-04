@@ -3,3 +3,4 @@
 *.xml
 pom.xml.asc
 target
+node_modules

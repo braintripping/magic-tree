@@ -2,7 +2,7 @@
   (:require [clojure.walk :as w]))
 
 
-(defn- construct-fn
+(defn construct-fn
   "Construct function form."
   [syms vararg body]
   (list
@@ -14,7 +14,7 @@
           (list '& vararg))))
     body))
 
-(defn- sym-index
+(defn sym-index
   "Get index based on the substring following the parameter's `%`.
    Zero means vararg."
   [n]
@@ -26,7 +26,7 @@
                          :clj Exception.) "arg literal must be %, %& or %integer."))))
 
 ;; TODO: No promises available
-(defn- symbol->gensym
+(defn symbol->gensym
   "If symbol starting with `%`, convert to respective gensym."
   [sym-seq vararg? max-n sym]
   (if (symbol? sym)
@@ -39,7 +39,7 @@
           (nth sym-seq i))))))
 
 ;; TODO: No promises available
-(defn- fn-walk
+(defn fn-walk
   "Walk the form and create an expand function form."
   [form]
   (let [syms (for [i (range)

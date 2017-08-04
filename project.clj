@@ -7,7 +7,7 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.293"]
+                 [org.clojure/clojurescript "1.9.671"]
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [org.clojure/tools.reader "1.0.2"]
                  [fast-zip "0.7.0"]
@@ -18,7 +18,8 @@
 
   :lein-release {:deploy-via :clojars}
 
-  :doo {:build "test"}
+  :doo {:build "test"
+        :paths {:karma "./node_modules/karma/bin/karma"}}
 
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]

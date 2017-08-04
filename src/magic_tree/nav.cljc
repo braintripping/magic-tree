@@ -42,7 +42,8 @@
                                    (navigate pos))
                            (when-not (= :base (get ast :tag))
                              ast))))
-        :else (throw (js/Error "Invalid argument passed to `node-at`"))))
+        :else (throw (#?(:cljs js/Error
+                         :clj Exception.) "Invalid argument passed to `node-at`"))))
 
 (defn mouse-eval-region
   "Select sexp under the mouse. Whitespace defers to parent."

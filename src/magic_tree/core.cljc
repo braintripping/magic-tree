@@ -92,9 +92,8 @@
       (assert (= (sexp result-node) result-sexp))
       (assert (= (string result-node) result-string)))))
 
-(comment
-  (let [sample-code-string ""]
+#_(let [sample-code-string ""]
     (let [_ (.profile js/console "parse-ast")
           ast (time (parse/ast sample-code-string))
           _ (.profileEnd js/console)]
-      (println :cljs-core-string-verify (= (unwrap/string ast) sample-code-string)))))
+      (println :cljs-core-string-verify (= (unwrap/string ast) sample-code-string))))

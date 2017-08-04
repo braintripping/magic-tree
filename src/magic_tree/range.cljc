@@ -8,18 +8,14 @@
                   true [>= <=]
                   false [> <])]
     (fn within? [container pos]
-      (condp = (type container)
-        z/ZipperLocation
-        (within? (z/node container) pos)
-
-        PersistentArrayMap
-        #_magic-tree.parse/Node
+      (if (map? container)
         (let [{r :line c :column} pos
               {:keys [line column end-line end-column]} container]
           (and (>= r line)
                (<= r end-line)
                (if (= r line) (gt c column) true)
-               (if (= r end-line) (lt c end-column) true)))))))
+               (if (= r end-line) (lt c end-column) true)))
+        (within? (z/node container) pos)))))
 
 (defn at-boundary? [node pos])
 (def within? (contains-fn true))
