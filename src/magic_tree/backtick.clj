@@ -7,7 +7,7 @@
 
 (def ^:dynamic ^:private *gensyms*)
 
-(defn- resolve-sym [sym]
+(defn resolve-sym [sym]
   (let [n (name sym)]
     (if (= (last n) \#)
       (if-let [gs (@*gensyms* sym)]
@@ -23,7 +23,7 @@
 (defn unquote-splicing? [form]
   (and (seq? form) (= (first form) 'clojure.core/unquote-splicing)))
 
-(defn- quote-fn* [form]
+(defn quote-fn* [form]
   (cond
     (symbol? form) `'~(resolve-sym form)
     (unquote? form) (second form)

@@ -7,7 +7,7 @@
             [clojure.tools.reader.reader-types :as r]
             [clojure.tools.reader.edn :as edn]))
 
-(enable-console-print!)
+#?(:cljs (enable-console-print!))
 
 (def ^:dynamic *errors* nil)
 (defn error! [info]
@@ -55,7 +55,7 @@
             (identical? (v i) item) true
             :else (recur (inc i))))))
 
-(defn- read-to-boundary
+(defn read-to-boundary
   [reader allowed]
   (rd/read-until
     reader
@@ -63,7 +63,7 @@
               (boundary? %))
           (not (allowed %)))))
 
-(defn- read-to-char-boundary
+(defn read-to-char-boundary
   [reader]
   (let [c (rd/next reader)]
     (str c
@@ -76,30 +76,7 @@
   [s]
   (edn/read-string s))
 
-(defn- dispatch
-  [c]
-  (cond (identical? c *delimiter*) :matched-delimiter
-        (nil? c) :eof
-        :else (case c
-                \, :comma
-                " " :space
-                ("\n" "\r") :newline
-                \^ :meta
-                \# :sharp
-                \( :list
-                \[ :vector
-                \{ :map
-                (\} \] \)) :unmatched-delimiter
-                \~ :unquote
-                \' :quote
-                \` :syntax-quote
-                \; :comment
-                \@ :deref
-                \" :string
-                \: :keyword
-                :token)))
-
-(defn- dispatch
+(defn dispatch
   [c]
   (cond (identical? c *delimiter*) :matched-delimiter
         (nil? c) :eof
@@ -127,7 +104,7 @@
         (identical? c \:) :keyword
         :else :token))
 
-(defn- parse-delim
+(defn parse-delim
   [reader delimiter]
   (rd/ignore reader)
   (rd/read-repeatedly reader #(binding [*delimiter* delimiter]
@@ -137,7 +114,7 @@
   (contains? #{:space :comma :newline :comment}
              (:tag n)))
 
-(defn- parse-printables
+(defn parse-printables
   [reader node-tag n & [ignore?]]
   (when-not (nil? ignore?)
     (rd/ignore reader))
@@ -200,8 +177,8 @@
            [:reader-conditional value opts]))
     [:reader-macro (parse-printables reader :reader-macro 2)]))
 
-(defn- parse-unquote
-  [^not-native reader]
+(defn parse-unquote
+  [reader]
   (rd/ignore reader)
   (let [c (rd/peek reader)]
     (if ^:boolean (identical? c \@)

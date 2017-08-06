@@ -14,36 +14,34 @@
 (defn navigate
   "Navigate to a position within a zipper (returns loc) or ast (returns node)."
   [ast pos]
-  (cond (= (type ast) z/ZipperLocation)
-        (let [loc ast
-              {:keys [value] :as node} (z/node loc)
-              found (when (range/within? node pos)
-                      (if
-                        (or (n/terminal-node? node) (not (seq value)))
-                        loc
-                        (or
-                          (some-> (filter #(range/within? % pos) (child-locs loc))
-                                  first
-                                  (navigate pos))
-                          ;; do we want to avoid 'base'?
-                          loc #_(when-not (= :base (get node :tag))
-                                  loc))))]
-          (if (let [found-node (some-> found z/node)]
-                (and (= (get pos :line) (get found-node :end-line))
-                     (= (get pos :column) (get found-node :end-column))))
-            (or (z/right found) found)
-            found))
-        (map? ast) (when (range/within? ast pos)
-                     (if
-                       (or (n/terminal-node? ast) (not (seq (get ast :value))))
-                       ast
-                       (or (some-> (filter #(range/within? % pos) (get ast :value))
-                                   first
-                                   (navigate pos))
-                           (when-not (= :base (get ast :tag))
-                             ast))))
-        :else (throw (#?(:cljs js/Error
-                         :clj Exception.) "Invalid argument passed to `node-at`"))))
+  (if (map? ast)
+    (when (range/within? ast pos)
+      (if
+        (or (n/terminal-node? ast) (not (seq (get ast :value))))
+        ast
+        (or (some-> (filter #(range/within? % pos) (get ast :value))
+                    first
+                    (navigate pos))
+            (when-not (= :base (get ast :tag))
+              ast))))
+    (let [loc ast
+          {:keys [value] :as node} (z/node loc)
+          found (when (range/within? node pos)
+                  (if
+                    (or (n/terminal-node? node) (not (seq value)))
+                    loc
+                    (or
+                      (some-> (filter #(range/within? % pos) (child-locs loc))
+                              first
+                              (navigate pos))
+                      ;; do we want to avoid 'base'?
+                      loc #_(when-not (= :base (get node :tag))
+                              loc))))]
+      (if (let [found-node (some-> found z/node)]
+            (and (= (get pos :line) (get found-node :end-line))
+                 (= (get pos :column) (get found-node :end-column))))
+        (or (z/right found) found)
+        found))))
 
 (defn mouse-eval-region
   "Select sexp under the mouse. Whitespace defers to parent."

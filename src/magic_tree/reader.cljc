@@ -7,7 +7,7 @@
 
 (defn throw-reader
   "Throw reader exception, including line/column."
-  [^not-native reader fmt & data]
+  [reader fmt & data]
   (let [c (r/get-column-number reader)
         l (r/get-line-number reader)]
     (throw
@@ -22,7 +22,7 @@
 (defn read-while
   "Read while the chars fulfill the given condition. Ignores
    the unmatching char."
-  [^not-native reader p? & [eof?]]
+  [reader p? & [eof?]]
   (let [eof? (if ^:boolean (nil? eof?)
                (not (p? nil))
                eof?)]
@@ -46,28 +46,28 @@
 (defn read-until
   "Read until a char fulfills the given condition. Ignores the
    matching char."
-  [^not-native reader p?]
+  [reader p?]
   (read-while reader (complement p?) (p? nil)))
 
 (defn next
   "Read next char."
-  [^not-native reader]
+  [reader]
   (r/read-char reader))
 
 (defn ignore
   "Ignore the next character."
-  [^not-native reader]
+  [reader]
   (r/read-char reader))
 
 (defn unread
   "Unreads a char. Puts the char back on the reader."
-  [^not-native reader ch]
+  [reader ch]
   (r/unread reader ch))
 
 (defn read-repeatedly
   "Call the given function on the given reader until it returns
    a non-truthy value."
-  [^not-native reader read-fn]
+  [reader read-fn]
   (loop [reader reader
          out []]
     (let [next-node (read-fn reader)]
@@ -80,13 +80,13 @@
 
 (defn position
   "Returns 0-indexed vector of [line, column] for current reader position."
-  [^not-native reader]
+  [reader]
   [(dec (r/get-line-number reader))
    (dec (r/get-column-number reader))])
 
 (defn read-with-position
   "Use the given function to read value, then attach row/col metadata."
-  [^not-native reader read-fn]
+  [reader read-fn]
   ;; X dec row, because we wrap forms with [\n ...]
   ;; X dec end-col, because that char belongs to the next form
   (let [start-line (dec (r/get-line-number reader))
@@ -104,7 +104,7 @@
 (defn read-n
   "Call the given function on the given reader until `n` values matching `p?` have been
    collected."
-  [^not-native reader node-tag read-fn p? n]
+  [reader node-tag read-fn p? n]
   {:pre [(pos? n)]}
   (loop [c 0
          vs []]
@@ -121,8 +121,8 @@
           (if ^:boolean (= n 1) "" "s")))
       vs)))
 
-(defn- read-string-data
-  [^not-native reader]
+(defn read-string-data
+  [reader]
   (ignore reader)
   #?(:cljs (.clear buf)
      :clj  (.setLength buf 0))
