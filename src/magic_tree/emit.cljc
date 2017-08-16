@@ -1,13 +1,10 @@
 (ns magic-tree.emit
   (:refer-clojure :exclude [*ns*])
-  (:require [clojure.tools.reader.edn :as edn]
-            [clojure.tools.reader :as r]
+  (:require [clojure.tools.reader :as r]
             [fast-zip.core :as z]
             [magic-tree.fn :refer [fn-walk]]
             #?(:clj [magic-tree.backtick :refer [template]]))
   #?(:cljs (:require-macros [magic-tree.backtick :refer [template]])))
-
-
 
 (def ^:dynamic *ns* (symbol "magic-tree.user"))
 (def ^:dynamic *features* #{:cljs})
@@ -37,8 +34,6 @@
    })
 
 (def tag-for-print-only? #{:comment :uneval :space :newline :comma})
-
-
 
 (declare string)
 
@@ -121,7 +116,7 @@
         :string value
         :deref (template (deref ~(first (as-code value))))
 
-        :token (edn/read-string value)
+        :token (r/read-string value)
         :vector (vec (as-code value))
         :list (list* (as-code value))
         :fn (fn-walk (as-code value))
