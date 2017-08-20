@@ -1,7 +1,6 @@
 (ns magic-tree.parse-test
   (:require [magic-tree.parse :as parse]
             [magic-tree.core :as tree]
-            [cljs.pprint :refer [pprint]]
             [clojure.test :refer-macros [deftest is are testing]]
             [fast-zip.core :as z]
             [magic-tree.emit :as emit]))

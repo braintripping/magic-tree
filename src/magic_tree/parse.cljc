@@ -3,7 +3,6 @@
 
 (ns magic-tree.parse
   (:require [magic-tree.reader :as rd]
-            [clojure.pprint :refer [pprint]]
             [clojure.tools.reader.reader-types :as r]
             [clojure.tools.reader.edn :as edn]))
 
