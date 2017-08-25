@@ -49,11 +49,9 @@
 (def child-locs nav/child-locs)
 (def right-locs nav/right-locs)
 (def left-locs nav/left-locs)
-(def top-loc nav/top-loc)
 
 (def node-at nav/navigate)
 (def mouse-eval-region nav/mouse-eval-region)
-(def nearest-bracket-region nav/nearest-highlight-region)
 
 
 ;; Ranges

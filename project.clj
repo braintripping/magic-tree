@@ -1,4 +1,4 @@
-(defproject magic-tree "0.0.12-SNAPSHOT"
+(defproject magic-tree "0.0.13-SNAPSHOT"
   :description "Clojure(Script) Source Tool"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -10,8 +10,7 @@
                  [org.clojure/clojurescript "1.9.671"]
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [org.clojure/tools.reader "1.0.2"]
-                 [fast-zip "0.7.0"]
-                 [cljsjs/codemirror "5.19.0-0"]]
+                 [fast-zip "0.7.0"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-doo "0.1.6"]]

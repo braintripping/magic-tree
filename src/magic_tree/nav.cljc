@@ -49,16 +49,3 @@
   (or (and (n/sexp? (z/node loc)) loc)
       (z/up loc)))
 
-(defn nearest-highlight-region
-  "Current sexp, or nearest sexp to the left, or parent."
-  [loc]
-  (or (->> (cons loc (left-locs loc))
-           (filter (comp #(or (n/sexp? %)
-                              (= :uneval (get % :tag))) z/node))
-           first)
-      (z/up loc)))
-
-(defn top-loc [loc]
-  (let [loc (nearest-highlight-region loc)]
-    (first (filter #(or (= :base (get (z/node %) :tag))
-                        (= :base (get (z/node (z/up %)) :tag))) (iterate z/up loc)))))

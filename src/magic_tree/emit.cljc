@@ -5,7 +5,8 @@
             [fast-zip.core :as z]
             [magic-tree.fn :refer [fn-walk]]
             [clojure.string :as string]
-    #?(:clj [magic-tree.backtick :refer [template]]))
+    #?(:clj
+            [magic-tree.backtick :refer [template]]))
   #?(:cljs (:require-macros [magic-tree.backtick :refer [template]])))
 
 
@@ -110,7 +111,7 @@
   (when node
     (if (= "error" (namespace tag))
       (throw (#?(:cljs js/Error
-                 :clj Exception.) node))
+                 :clj  Exception.) node))
       (case tag
         :base (as-code value)
 
@@ -145,7 +146,10 @@
                                 []))
         (:meta
           :reader-meta) (let [[m data] (as-code value)]
-                          (with-meta data (if (map? m) m {m true})))
+                          (cond-> data
+                                  #?(:cljs (satisfies? IWithMeta data)
+                                     :clj (instance? clojure.lang.IMeta data))
+                                  (with-meta (if (map? m) m {m true}))))
         :regex (re-pattern value)
         :namespaced-keyword (keyword *ns* (name value))
         :keyword value
