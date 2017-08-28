@@ -49,3 +49,10 @@
   (or (and (n/sexp? (z/node loc)) loc)
       (z/up loc)))
 
+(defn top-loc [loc]
+  (loop [loc loc]
+    (if-not loc
+      loc
+      (if (= :base (:tag (z/node loc)))
+        loc
+        (recur (z/up loc))))))

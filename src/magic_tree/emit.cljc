@@ -54,9 +54,6 @@
 
 (defn string
   "Emit ClojureScript string from a magic-tree AST"
-  ([ns node]
-   (binding [*ns* (or ns (symbol "cljs.user"))]
-     (string node)))
   ([node]
    (when-not (nil? node)
      (if (map? node)
@@ -94,7 +91,10 @@
              :keyword (str value)
              :namespaced-keyword (str "::" (name value))
              nil "")))
-       (string (z/node node))))))
+       (string (z/node node)))))
+  ([ns node]
+   (binding [*ns* (or ns (symbol "cljs.user"))]
+     (string node))))
 
 (declare sexp)
 
@@ -107,7 +107,6 @@
                   out value)))) [] forms))
 
 (defn sexp [{:keys [tag value prefix] :as node}]
-
   (when node
     (if (= "error" (namespace tag))
       (throw (#?(:cljs js/Error

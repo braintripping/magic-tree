@@ -3,6 +3,7 @@
 
 (ns magic-tree.parse
   (:require [magic-tree.reader :as rd]
+            [magic-tree.emit :as emit]
             [clojure.tools.reader.reader-types :as r]
             [clojure.tools.reader.edn :as edn]))
 
@@ -247,10 +248,8 @@
   (r/indexing-push-back-reader
     (r/string-push-back-reader s)))
 
-(defn ast
-  "Parse ClojureScript source code to AST"
+(defn ast*
   [s]
-
   (binding [*errors* []]
     (loop [reader (indexing-reader s)
            values []]
@@ -263,3 +262,15 @@
          :column     0
          :end-line   (r/get-line-number reader)
          :end-column (r/get-column-number reader)}))))
+
+(defn ast
+  "Parse ClojureScript source code to AST"
+  ([source] (ast nil source))
+  ([ns source]
+   (let [the-ast (ast* source)
+         out-str (emit/string ns the-ast)
+         modified-source? (not= source out-str)]
+     (assoc (if modified-source?
+              (ast* out-str)
+              the-ast) :string out-str
+                       :modified-source? modified-source?))))

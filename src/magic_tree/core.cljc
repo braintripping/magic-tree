@@ -1,7 +1,7 @@
 (ns magic-tree.core
   (:refer-clojure :exclude [range])
   (:require [magic-tree.parse :as parse]
-            [magic-tree.emit :as unwrap]
+            [magic-tree.emit :as emit]
             [magic-tree.node :as n]
             [magic-tree.nav :as nav]
             [magic-tree.range :as range]
@@ -28,9 +28,9 @@
 
 ;; Emit
 
-(def string unwrap/string)
-(def sexp unwrap/sexp)
-(def edges unwrap/edges)
+(def string emit/string)
+(def sexp emit/sexp)
+(def edges emit/edges)
 
 ;; Nodes
 
@@ -49,10 +49,10 @@
 (def child-locs nav/child-locs)
 (def right-locs nav/right-locs)
 (def left-locs nav/left-locs)
+(def top-loc nav/top-loc)
 
 (def node-at nav/navigate)
 (def mouse-eval-region nav/mouse-eval-region)
-
 
 ;; Ranges
 
@@ -60,7 +60,8 @@
 (def inside? range/inside?)
 (def edge-ranges range/edge-ranges)
 (def inner-range range/inner-range)
-(def boundaries range/boundaries)
+(def bounds range/bounds)
+(def empty-range? range/empty-range?)
 (def node-highlights range/node-highlights)
 
 
@@ -94,4 +95,4 @@
     (let [_ (.profile js/console "parse-ast")
           ast (time (parse/ast sample-code-string))
           _ (.profileEnd js/console)]
-      (println :cljs-core-string-verify (= (unwrap/string ast) sample-code-string))))
+      (println :cljs-core-string-verify (= (emit/string ast) sample-code-string))))
