@@ -3,17 +3,29 @@
             [magic-tree.node :as n]
             [fast-zip.core :as z]))
 
+(defn lt [pos1 pos2]
+  (or (< (:line pos1) (:line pos2))
+      (and (= (:line pos1) (:line pos2))
+           (< (:column pos1) (:column pos2)))))
+
+(comment
+  (assert (lt {:line 0 :column 0} {:line 0 :column 1}))
+  (assert (lt {:line 0 :column 0} {:line 1 :column 0}))
+  (assert (not (lt {:line 0 :column 1} {:line 0 :column 0})))
+  (assert (not (lt {:line 1 :column 0} {:line 0 :column 0})))
+  (assert (not (lt {:line 0 :column 0} {:line 0 :column 0}))))
+
 (defn contains-fn [include-boundaries?]
   (let [[greater-than less-than] (case include-boundaries?
-                  true [>= <=]
-                  false [> <])]
+                                   true [>= <=]
+                                   false [> <])]
     (fn within? [container pos]
       (and container
            (if (map? container)
              (let [{pos-line :line pos-column :column} pos
                    {end-pos-line :end-line end-pos-column :end-column
-                    :or   {end-pos-line pos-line
-                           end-pos-column pos-column}} pos
+                    :or          {end-pos-line   pos-line
+                                  end-pos-column pos-column}} pos
                    {:keys [line column end-line end-column]} container]
                (and (>= pos-line line)
                     (<= end-pos-line end-line)
@@ -50,6 +62,11 @@
    (case side :left (select-keys node [:line :column])
               :right {:line   (:end-line node)
                       :column (:end-column node)})))
+
+(defn pos= [p1 p2]
+  (= (bounds p1)
+     (bounds p2)))
+
 
 (defn empty-range? [node]
   (and (= (:line node) (:end-line node))
