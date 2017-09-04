@@ -5,7 +5,8 @@
   (:require [magic-tree.reader :as rd]
             [magic-tree.emit :as emit]
             [clojure.tools.reader.reader-types :as r]
-            [clojure.tools.reader.edn :as edn]))
+            [clojure.tools.reader.edn :as edn]
+            [magic-tree.node :as n]))
 
 #?(:cljs (enable-console-print!))
 
@@ -190,18 +191,24 @@
               (rd/read-while reader #{\;})
               (when (= " " (r/peek-char reader))
                 (r/read-char reader))
-              (let [next-line (rd/read-until reader #(or (nil? %)
-                                                         (identical? % \newline)
-                                                         (identical? % \return)))
-                    next-newline (when (newline? (r/peek-char reader))
-                                   (r/read-char reader))
-                    next-comment? (and next-newline (= \; (r/peek-char reader)))]
+
+              (let [comment-line (rd/read-until reader #(or (nil? %)
+                                                            (identical? % \newline)
+                                                            (identical? % \return)))
+                    next-whitespace (loop [whitespace nil]
+                                      (let [next-char (r/peek-char reader)]
+                                        (if (whitespace? next-char)
+                                          (do (r/read-char reader)
+                                              (recur (str whitespace next-char)))
+                                          whitespace)))
+                    next-comment? (and next-whitespace (= \; (r/peek-char reader)))]
                 (if next-comment?
-                  (recur (str text next-line next-newline))
+                  (recur (str text comment-line next-whitespace))
                   (do
-                    (when next-newline
-                      (r/unread reader next-newline))
-                    (str text next-line)))))])
+                    (when next-whitespace
+                      (doseq [c (reverse next-whitespace)]
+                        (r/unread reader c)))
+                    (str text comment-line)))))])
 
 (defn parse-next*
   [reader]
@@ -246,7 +253,7 @@
   "Create reader for strings."
   [s]
   (r/indexing-push-back-reader
-    (r/string-push-back-reader s)))
+    (r/string-push-back-reader s 100)))
 
 (defn ast*
   [s]
