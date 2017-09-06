@@ -56,3 +56,10 @@
       (if (= :base (:tag (z/node loc)))
         loc
         (recur (z/up loc))))))
+
+(defn closest [pred loc]
+  (if-not loc
+    nil
+    (if (pred loc)
+      loc
+      (recur pred (z/up loc)))))

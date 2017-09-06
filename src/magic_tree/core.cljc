@@ -50,6 +50,7 @@
 (def right-locs nav/right-locs)
 (def left-locs nav/left-locs)
 (def top-loc nav/top-loc)
+(def closest nav/closest)
 
 (def node-at nav/navigate)
 (def mouse-eval-region nav/mouse-eval-region)

@@ -69,8 +69,8 @@
 
 
 (defn empty-range? [node]
-  (and (= (:line node) (:end-line node))
-       (= (:column node) (:end-column node))))
+  (and (or (= (:line node) (:end-line node)) (nil? (:end-line node)))
+       (or (= (:column node) (:end-column node)) (nil? (:end-column node)))))
 
 (defn node-highlights
   "Get range(s) to highlight for a node. For a collection, only highlight brackets."
