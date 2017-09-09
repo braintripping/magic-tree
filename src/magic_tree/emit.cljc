@@ -40,6 +40,10 @@
 
 (def tag-for-print-only? #{:comment :uneval :space :newline :comma})
 
+(def prefix-parent? (reduce (fn [s [k [_ rb]]]
+                              (cond-> s
+                                      (nil? rb) (conj k))) #{} edges))
+
 
 
 (declare string)

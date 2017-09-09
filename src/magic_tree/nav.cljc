@@ -2,22 +2,20 @@
   (:refer-clojure :exclude [range])
   (:require [fast-zip.core :as z]
             [magic-tree.node :as n]
+            [magic-tree.emit :as emit]
             [magic-tree.range :as range]))
 
-(defn include-prefix [loc]
-  (cond-> loc
-          (#{:deref
-             :unquote
-             :quote
-             :syntax-quote} (some-> (z/up loc) (z/node) :tag))
-          (z/up)))
+(defn include-prefix-parents [loc]
+  (if (emit/prefix-parent? (some-> (z/up loc) (z/node) :tag))
+    (include-prefix-parents (z/up loc))
+    loc))
 
 (defn child-locs [loc]
   (take-while identity (iterate z/right (z/down loc))))
 (defn right-locs [loc]
-  (take-while identity (iterate z/right (z/right loc))))
+  (take-while identity (iterate z/right (z/right (include-prefix-parents loc)))))
 (defn left-locs [loc]
-  (take-while identity (iterate z/left (z/left loc))))
+  (take-while identity (iterate z/left (z/left (include-prefix-parents loc)))))
 
 (defn navigate
   "Navigate to a position within a zipper (returns loc) or ast (returns node)."
