@@ -4,6 +4,14 @@
             [magic-tree.node :as n]
             [magic-tree.range :as range]))
 
+(defn include-prefix [loc]
+  (cond-> loc
+          (#{:deref
+             :unquote
+             :quote
+             :syntax-quote} (some-> (z/up loc) (z/node) :tag))
+          (z/up)))
+
 (defn child-locs [loc]
   (take-while identity (iterate z/right (z/down loc))))
 (defn right-locs [loc]

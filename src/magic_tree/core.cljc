@@ -30,7 +30,7 @@
 
 (def string emit/string)
 (def sexp emit/sexp)
-(def edges emit/edges)
+(def edges (comp emit/edges :tag))
 
 ;; Nodes
 
@@ -51,6 +51,7 @@
 (def left-locs nav/left-locs)
 (def top-loc nav/top-loc)
 (def closest nav/closest)
+(def include-prefix nav/include-prefix)
 
 (def node-at nav/navigate)
 (def mouse-eval-region nav/mouse-eval-region)
