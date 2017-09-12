@@ -5,6 +5,13 @@
             [fast-zip.core :as z]
             [magic-tree.emit :as emit]))
 
+(defn shape [{:keys [tag value] :as node}]
+  (if (= tag :base)
+    (mapv shape value)
+    (if (tree/may-contain-children? node)
+      [tag (mapv shape value)]
+      tag)))
+
 (deftest parse
   (binding [magic-tree.emit/*ns* (symbol "magic-tree.parse-test")]
     (testing "parse and emit"
@@ -63,10 +70,23 @@
 
       )
 
+    (are [in-string the-shape]
+      (is (= (shape (parse/ast in-string)) the-shape))
+
+      "\n" [:newline]
+      "\n\n;A" [:newline :comment-block]
+      ";A" [:comment-block]
+      " ;A" [:space :comment]
+      "; a
+
+      ; b" [:comment-block]
+      )
+
     (are [in-string out-string]
-      (is (= out-string (emit/string (parse/ast in-string))))
+      (is (= (str "\n" out-string) (emit/string (parse/ast (str "\n" in-string)))))
 
       ";A" ";; A"
+
       ";;; A" ";; A"
       ";;;A" ";; A"
       ";;  A" ";;  A"
@@ -77,7 +97,8 @@
       ";A\n;2\n3\n4" ";; A\n;; 2\n3\n4"
 
       "\n;A" "\n;; A"
-      "\n;A\n" "\n;; A\n")
+      "\n;A\n" "\n;; A\n"
+      )
 
     (comment
       ;; IN PROGRESS

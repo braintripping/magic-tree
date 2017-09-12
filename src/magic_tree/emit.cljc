@@ -92,7 +92,7 @@
              :comment (str ";" value "\n")
              :comment-block (as-> (string/split-lines value) lines
                                   (interpose "\n;; " lines)
-                                  (str ";; " (apply str lines))) ;; to avoid highlighting, we don't consider the leading ; an 'edge'
+                                  (str "\n;; " (apply str lines))) ;; to avoid highlighting, we don't consider the leading ; an 'edge'
              :keyword (str value)
              :namespaced-keyword (str "::" (name value))
              nil "")))
