@@ -230,10 +230,10 @@
 
       :unquote (parse-unquote reader)
 
-      :newline (do (r/read-char reader)
+      :newline (do (rd/ignore reader)
                    (if (= \; (r/peek-char reader))
                      (parse-comment-block reader)
-                     [tag (str "\n" (rd/read-while reader #(identical? % c)))]))
+                     [tag "\n"]))
 
       (:comma
         :space) [tag (rd/read-while reader #(identical? % c))]
