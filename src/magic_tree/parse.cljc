@@ -112,7 +112,7 @@
                                 (parse-next %))))
 
 (defn ^:boolean printable-only? [n]
-  (contains? #{:space :comma :newline :comment}
+  (contains? #{:space :comma :newline :comment :comment-block}
              (:tag n)))
 
 (defn parse-printables
@@ -186,29 +186,29 @@
       [:unquote-splicing (parse-printables reader :unquote 1 true)]
       [:unquote (parse-printables reader :unquote 1)])))
 
-(defn parse-comment [reader]
-  [:comment (loop [text ""]
-              (rd/read-while reader #{\;})
-              (when (= " " (r/peek-char reader))
-                (r/read-char reader))
+(defn parse-comment-block [reader]
+  [:comment-block (loop [text ""]
+                    (rd/read-while reader #{\;})
+                    (when (= " " (r/peek-char reader))
+                      (r/read-char reader))
 
-              (let [comment-line (rd/read-until reader #(or (nil? %)
-                                                            (identical? % \newline)
-                                                            (identical? % \return)))
-                    next-whitespace (loop [whitespace nil]
-                                      (let [next-char (r/peek-char reader)]
-                                        (if (whitespace? next-char)
-                                          (do (r/read-char reader)
-                                              (recur (str whitespace next-char)))
-                                          whitespace)))
-                    next-comment? (and next-whitespace (= \; (r/peek-char reader)))]
-                (if next-comment?
-                  (recur (str text comment-line next-whitespace))
-                  (do
-                    (when next-whitespace
-                      (doseq [c (reverse next-whitespace)]
-                        (r/unread reader c)))
-                    (str text comment-line)))))])
+                    (let [comment-line (rd/read-until reader #(or (nil? %)
+                                                                  (identical? % \newline)
+                                                                  (identical? % \return)))
+                          next-whitespace (loop [whitespace nil]
+                                            (let [next-char (r/peek-char reader)]
+                                              (if (whitespace? next-char)
+                                                (do (r/read-char reader)
+                                                    (recur (str whitespace next-char)))
+                                                whitespace)))
+                          next-comment? (and next-whitespace (= \; (r/peek-char reader)))]
+                      (if next-comment?
+                        (recur (str text comment-line next-whitespace))
+                        (do
+                          (when next-whitespace
+                            (doseq [c (reverse next-whitespace)]
+                              (r/unread reader c)))
+                          (str text comment-line)))))])
 
 (defn parse-next*
   [reader]
@@ -218,15 +218,24 @@
       :token (parse-token reader)
       :keyword (parse-keyword reader)
       :sharp (parse-sharp reader)
-      :comment (parse-comment reader)
+      :comment (do (rd/ignore reader)
+                   (if (= [0 1] (rd/position reader))
+                     (parse-comment-block reader)
+                     [tag (let [content (rd/read-until reader (fn [x] (or (nil? x) (#{\newline \return} x))))]
+                            (rd/ignore reader)
+                            content)]))
       (:deref
         :quote
         :syntax-quote) [tag (parse-printables reader tag 1 true)]
 
       :unquote (parse-unquote reader)
 
-      (:newline
-        :comma
+      :newline (do (r/read-char reader)
+                   (if (= \; (r/peek-char reader))
+                     (parse-comment-block reader)
+                     [tag (str "\n" (rd/read-while reader #(identical? % c)))]))
+
+      (:comma
         :space) [tag (rd/read-while reader #(identical? % c))]
       (:list
         :vector

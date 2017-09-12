@@ -38,7 +38,7 @@
 
    })
 
-(def tag-for-print-only? #{:comment :uneval :space :newline :comma})
+(def tag-for-print-only? #{:comment :comment-block :uneval :space :newline :comma})
 
 (def prefix-parent? (reduce (fn [s [k [_ rb]]]
                               (cond-> s
@@ -89,9 +89,10 @@
              (:meta :reader-meta) (str prefix (wrap-children lbracket rbracket value))
              (:string
                :regex) (str lbracket value rbracket)
-             :comment (as-> (string/split-lines value) lines
-                            (interpose "\n;; " lines)
-                            (str ";; " (apply str lines)))  ;; to avoid highlighting, we don't consider the leading ; an 'edge'
+             :comment (str ";" value "\n")
+             :comment-block (as-> (string/split-lines value) lines
+                                  (interpose "\n;; " lines)
+                                  (str ";; " (apply str lines))) ;; to avoid highlighting, we don't consider the leading ; an 'edge'
              :keyword (str value)
              :namespaced-keyword (str "::" (name value))
              nil "")))
@@ -151,11 +152,12 @@
           :reader-meta) (let [[m data] (as-code value)]
                           (cond-> data
                                   #?(:cljs (satisfies? IWithMeta data)
-                                     :clj (instance? clojure.lang.IMeta data))
+                                     :clj  (instance? clojure.lang.IMeta data))
                                   (with-meta (if (map? m) m {m true}))))
         :regex (re-pattern value)
         :namespaced-keyword (keyword *ns* (name value))
         :keyword value
 
         (:comment
+          :comment-block
           :uneval) nil))))
