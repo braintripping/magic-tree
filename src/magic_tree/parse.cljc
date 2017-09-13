@@ -297,11 +297,6 @@
    (let [the-ast (ast* source)
          out-str (emit/string ns the-ast)
          modified-source? (not= source out-str)]
-     (when modified-source?
-       (prn "--modified-source--")
-       (prn source)
-       (prn out-str)
-       (prn "^--"))
      (assoc (if modified-source?
               (ast* out-str)
               the-ast) :string out-str

@@ -1,6 +1,6 @@
 (defproject magic-tree "0.0.14-SNAPSHOT"
   :description "Clojure(Script) Source Tool"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/braintripping/magic-tree"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
 
