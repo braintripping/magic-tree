@@ -98,3 +98,10 @@
           ast (time (parse/ast sample-code-string))
           _ (.profileEnd js/console)]
       (println :cljs-core-string-verify (= (emit/string ast) sample-code-string))))
+
+(defn shape [{:keys [tag value] :as node}]
+  (if (= tag :base)
+    (mapv shape value)
+    (if (may-contain-children? node)
+      [tag (mapv shape value)]
+      tag)))

@@ -5,12 +5,7 @@
             [fast-zip.core :as z]
             [magic-tree.emit :as emit]))
 
-(defn shape [{:keys [tag value] :as node}]
-  (if (= tag :base)
-    (mapv shape value)
-    (if (tree/may-contain-children? node)
-      [tag (mapv shape value)]
-      tag)))
+(def shape tree/shape)
 
 (deftest parse
   (binding [magic-tree.emit/*ns* (symbol "magic-tree.parse-test")]
@@ -80,6 +75,7 @@
       "; a
 
       ; b" [:comment-block]
+      "a/" [:symbol]
       )
 
     (are [in-string out-string]

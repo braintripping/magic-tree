@@ -6,7 +6,8 @@
             [magic-tree.emit :as emit]
             [clojure.tools.reader.reader-types :as r]
             [clojure.tools.reader.edn :as edn]
-            [magic-tree.node :as n]))
+            [magic-tree.node :as n]
+            [clojure.string :as string]))
 
 #?(:cljs (enable-console-print!))
 
@@ -137,9 +138,19 @@
         s (->> (if ^:boolean (identical? first-char \\)
                  (read-to-char-boundary reader)
                  (read-to-boundary reader #{}))
-               (str first-char))]
-    [:token (str s (when ^:boolean (symbol? (edn/read-string s))
-                     (read-to-boundary reader #{\' \:})))]))
+               (str first-char))
+        ;; determine if string is a symbol, inferring 'yes' on a
+        ;; symbol-related read error:
+        sexp (try (edn/read-string s)
+                  (catch #?(:cljs js/Error
+                            :clj Exception) e
+                    (when (string/includes? #?(:cljs (ex-message e)
+                                               :clj (.getMessage e)) "symbol")
+                      ::invalid-symbol)))
+        is-symbol ^:boolean (or (symbol? sexp) (= sexp ::invalid-symbol))]
+    (if is-symbol
+      [:symbol (str s (read-to-boundary reader #{\' \:}))]
+      [:token s])))
 
 (defn parse-keyword
   [reader]
@@ -286,6 +297,11 @@
    (let [the-ast (ast* source)
          out-str (emit/string ns the-ast)
          modified-source? (not= source out-str)]
+     (when modified-source?
+       (prn "--modified-source--")
+       (prn source)
+       (prn out-str)
+       (prn "^--"))
      (assoc (if modified-source?
               (ast* out-str)
               the-ast) :string out-str

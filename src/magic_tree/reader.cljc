@@ -11,7 +11,7 @@
   (let [c (r/get-column-number reader)
         l (r/get-line-number reader)]
     (throw
-      (#?(:cljs js/Error
+      (#?(:cljs js/Error.
           :clj  Exception.)
         (str fmt data
              " [at line " l ", column " c "]")))))

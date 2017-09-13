@@ -21,7 +21,7 @@
               (complement whitespace?)))
 
 (defn terminal-node? [node]
-  (boolean (#{:string :token :regex :var :keyword :namespaced-keyword :space :newline :comma :comment :comment-block} (get node :tag))))
+  (boolean (#{:string :token :symbol :regex :var :keyword :namespaced-keyword :space :newline :comma :comment :comment-block} (get node :tag))))
 
 (def may-contain-children? (complement terminal-node?))
 

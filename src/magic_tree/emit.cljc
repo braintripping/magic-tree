@@ -68,6 +68,7 @@
            (case tag
              :base (apply str (mapv string value))
              (:token :space :newline :comma) value
+
              :selection (when (some? *print-selections*)
                           (wrap-children "‹" "›" value))
              :cursor (when (some? *print-selections*)
@@ -93,8 +94,12 @@
              :comment-block (as-> (string/split-lines value) lines
                                   (interpose "\n;; " lines)
                                   (str "\n;; " (apply str lines))) ;; to avoid highlighting, we don't consider the leading ; an 'edge'
+
              :keyword (str value)
-             :namespaced-keyword (str "::" (name value))
+             :namespaced-keyword (str "::" (some-> (namespace value) (str "/")) (name value))
+
+             :symbol value
+
              nil "")))
        (string (z/node node)))))
   ([ns node]
@@ -114,7 +119,7 @@
 (defn sexp [{:keys [tag value prefix] :as node}]
   (when node
     (if (= "error" (namespace tag))
-      (throw (#?(:cljs js/Error
+      (throw (#?(:cljs js/Error.
                  :clj  Exception.) node))
       (case tag
         :base (as-code value)
@@ -126,6 +131,7 @@
 
         (:selection) (some-> (seq value) (as-code))
 
+        :symbol (symbol value)
         :string value
         :deref (template (deref ~(first (as-code value))))
 
