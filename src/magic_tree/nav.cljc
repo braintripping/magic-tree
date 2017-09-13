@@ -59,7 +59,8 @@
   (loop [loc loc]
     (if-not loc
       loc
-      (if (= :base (:tag (z/node loc)))
+      (if (or (= :base (:tag (z/node loc)))
+              (= :base (some-> (z/up loc) z/node :tag)))
         loc
         (recur (z/up loc))))))
 
