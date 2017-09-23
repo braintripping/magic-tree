@@ -20,8 +20,7 @@
             :clj  (StringBuilder.)))
 
 (defn read-while
-  "Read while the chars fulfill the given condition. Ignores
-   the unmatching char."
+  "Read while the chars fulfill the given condition. Does not consume the unmatching char."
   [reader p? & [eof?]]
   (let [eof? (if ^:boolean (nil? eof?)
                (not (p? nil))
@@ -44,8 +43,7 @@
           (throw-reader reader "Unexpected EOF."))))))
 
 (defn read-until
-  "Read until a char fulfills the given condition. Ignores the
-   matching char."
+  "Read until a char fulfills the given condition. Does not consume the matching char."
   [reader p?]
   (read-while reader (complement p?) (p? nil)))
 

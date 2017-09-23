@@ -197,8 +197,8 @@
       [:unquote-splicing (parse-printables reader :unquote 1 true)]
       [:unquote (parse-printables reader :unquote 1)])))
 
-(defn parse-comment-block [reader]
-  [:comment-block (loop [text ""]
+(defn parse-comment-block [reader opening-newline?]
+  [:comment-block (loop [text (if opening-newline? \newline "")]
                     (rd/read-while reader #{\;})
                     (when (= " " (r/peek-char reader))
                       (r/read-char reader))
@@ -231,7 +231,7 @@
       :sharp (parse-sharp reader)
       :comment (do (rd/ignore reader)
                    (if (= [0 1] (rd/position reader))
-                     (parse-comment-block reader)
+                     (parse-comment-block reader false)
                      [tag (let [content (rd/read-until reader (fn [x] (or (nil? x) (#{\newline \return} x))))]
                             (rd/ignore reader)
                             content)]))
@@ -243,7 +243,7 @@
 
       :newline (do (rd/ignore reader)
                    (if (= \; (r/peek-char reader))
-                     (parse-comment-block reader)
+                     (parse-comment-block reader true)
                      [tag "\n"]))
 
       (:comma

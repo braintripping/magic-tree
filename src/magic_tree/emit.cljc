@@ -91,9 +91,20 @@
              (:string
                :regex) (str lbracket value rbracket)
              :comment (str ";" value "\n")
-             :comment-block (as-> (string/split-lines value) lines
-                                  (interpose "\n;; " lines)
-                                  (str "\n;; " (apply str lines))) ;; to avoid highlighting, we don't consider the leading ; an 'edge'
+             :comment-block
+             (string/join (sequence (comp (map #(if (.test #"^\s*$" %)
+                                                  %
+                                                  (str ";; " %)))
+                                          (interpose "\n"))
+                                    (string/split-lines value)))
+             #_(reduce (fn [out line]
+                       (if (.test #"^\s*$" line)
+                         (str out "\n" line)
+                         (str out "\n;; " line))
+                       ) "" (string/split-lines value))
+             #_(as-> (string/split-lines value) lines
+                   (interpose "\n;; " lines)
+                   (str "\n;; " (apply str lines)))         ;; to avoid highlighting, we don't consider the leading ; an 'edge'
 
              :keyword (str value)
              :namespaced-keyword (str "::" (some-> (namespace value) (str "/")) (name value))

@@ -79,7 +79,7 @@
       )
 
     (are [in-string out-string]
-      (is (= (str "\n" out-string) (emit/string (parse/ast (str "\n" in-string)))))
+      (is (=  #_"\n" out-string (emit/string (parse/ast  #_"\n" in-string))))
 
       ";A" ";; A"
 
@@ -94,6 +94,11 @@
 
       "\n;A" "\n;; A"
       "\n;A\n" "\n;; A\n"
+
+      ";; A\n;; \n;; B" ";; A\n\n;; B"
+
+      ";; A \n\n\n;; B\n;; C" ";; A \n\n\n;; B\n;; C"
+      ";; # Hi!\n;; This" ";; # Hi!\n;; This"
       )
 
     (comment
