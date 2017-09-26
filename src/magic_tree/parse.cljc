@@ -19,6 +19,7 @@
 
 (def ^:dynamic ^:private *delimiter* nil)
 (declare parse-next)
+(def non-breaking-space \u00A0)
 
 ;; identical? lookups are 10x faster than set-contains and 2x faster than js-array indexOf
 
@@ -27,10 +28,16 @@
   (or (identical? c \newline)
       (identical? c \return)))
 
+(defn ^:boolean space?
+  [c]
+  (or (identical? c \space)
+      (identical? c non-breaking-space)))
+
 (defn ^:boolean whitespace?
   [c]
   (or (identical? c \,)
-      (identical? c " ")
+      (identical? c \space)
+      (identical? c non-breaking-space)
       (newline? c)))
 
 (defn ^:boolean boundary?
@@ -83,7 +90,9 @@
         (nil? c) :eof
 
         (identical? c \,) :comma
-        (identical? c " ") :space
+
+        (or (identical? c \space)
+            (identical? c non-breaking-space)) :space
 
         (newline? c) :newline
 
@@ -200,7 +209,7 @@
 (defn parse-comment-block [reader opening-newline?]
   [:comment-block (loop [text (if opening-newline? \newline "")]
                     (rd/read-while reader #{\;})
-                    (when (= " " (r/peek-char reader))
+                    (when (space? (r/peek-char reader))
                       (r/read-char reader))
 
                     (let [comment-line (rd/read-until reader #(or (nil? %)
@@ -246,8 +255,8 @@
                      (parse-comment-block reader true)
                      [tag "\n"]))
 
-      (:comma
-        :space) [tag (rd/read-while reader #(identical? % c))]
+      :comma [tag (rd/read-while reader #(identical? % c))]
+      :space [tag (rd/read-while reader space?)]
       (:list
         :vector
         :map) [tag (parse-delim reader (get brackets c))]
@@ -296,8 +305,9 @@
   ([ns source]
    (let [the-ast (ast* source)
          out-str (emit/string ns the-ast)
-         modified-source? (not= source out-str)]
-     (assoc (if modified-source?
-              (ast* out-str)
-              the-ast) :string out-str
-                       :modified-source? modified-source?))))
+         modified-source? (not= source out-str)
+         result  (assoc (if modified-source?
+                          (ast* out-str)
+                          the-ast) :string out-str
+                                   :modified-source? modified-source?)]
+     result)))

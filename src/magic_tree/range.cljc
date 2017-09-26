@@ -33,7 +33,6 @@
                     (if (= end-pos-line end-line) (less-than end-pos-column end-column) true)))
              (within? (z/node container) pos))))))
 
-(defn at-boundary? [node pos])
 (def within? (contains-fn true))
 (def inside? (contains-fn false))
 
